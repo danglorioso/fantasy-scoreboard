@@ -1,0 +1,25 @@
+# Generate the Xcode project with:  brew install xcodegen && xcodegen
+name: FantasyOverlay
+options:
+  bundleIdPrefix: com.example   # change to your own reverse-domain prefix
+  deploymentTarget:
+    tvOS: "17.0"
+targets:
+  FantasyOverlay:
+    type: application
+    platform: tvOS
+    sources: [FantasyOverlay]
+    settings:
+      base:
+        SWIFT_VERSION: "5.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.fantasyoverlay   # change me
+        DEVELOPMENT_TEAM: ""                                    # your Team ID, or pick it in Xcode
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+    info:
+      path: FantasyOverlay/Info.plist
+      properties:
+        CFBundleDisplayName: Fantasy Overlay
+        UIBackgroundModes: [audio]
+        ITSAppUsesNonExemptEncryption: false
