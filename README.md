@@ -15,7 +15,11 @@ This app floats a Picture-in-Picture window over whatever you're watching on App
      'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2026/segments/0/leagues/LEAGUE_ID?view=mTeam' | head -c 400
    ```
    If the cookies work, you'll see JSON with your team names. HTML or a 401 error means the cookies are wrong.
-4. Paste all three values into `FantasyOverlay/Config.swift`. **Don't push that file to a public repo**, because the cookies are effectively your ESPN login.
+4. Copy the template and paste all three values into it:
+   ```sh
+   cp FantasyOverlay/Secrets.swift.example FantasyOverlay/Secrets.swift
+   ```
+   `Secrets.swift` is git-ignored, so your cookies never get committed. Never put them in `Config.swift` or any other tracked file: `espn_s2` is effectively your ESPN login.
 
 ## 2. Build it
 
@@ -48,7 +52,7 @@ This works for tvOS too: use **Product → Archive**, upload, and add yourself a
 
 ## 4. Use it on game day
 
-1. Open Fantasy Overlay on the Apple TV. It starts in **Demo mode** until `Config.swift` is filled in.
+1. Open Fantasy Overlay on the Apple TV. It starts in **Demo mode** until `Secrets.swift` is filled in.
 2. Press **Start floating scoreboard**.
 3. Press the **TV/Home** button and open your streaming app. The window stays floating on top.
 4. To move it to another corner, press the TV button while PiP is showing and use the PiP controls.

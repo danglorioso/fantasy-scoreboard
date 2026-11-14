@@ -1,15 +1,15 @@
 import Foundation
 
-/// Fill these in before building. Don't commit this file anywhere public:
-/// espn_s2 + SWID are effectively your ESPN login.
+/// App settings. Your ESPN league ID and cookies live in Secrets.swift, which is
+/// git-ignored so they never get committed. See Secrets.swift.example / README.
 enum Config {
-    // From your league URL: https://fantasy.espn.com/football/league?leagueId=XXXXXXX
-    static let leagueID = "YOUR_LEAGUE_ID"
+    static let leagueID = Secrets.leagueID
     static let season = 2026
 
-    // Browser cookies from fantasy.espn.com (see README).
-    static let espnS2 = "YOUR_ESPN_S2_COOKIE"
-    static let swid = "{YOUR-SWID-INCLUDING-CURLY-BRACES}"
+    // Browser cookies from fantasy.espn.com (see README). espn_s2 + SWID are
+    // effectively your ESPN login — keep them out of git.
+    static let espnS2 = Secrets.espnS2
+    static let swid = Secrets.swid
 
     // Polling
     static let pollSeconds: Double = 30
