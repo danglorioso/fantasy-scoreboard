@@ -30,6 +30,26 @@ actor DemoSource: ScoreSource {
         matchups = Self.inventedLeague()
     }
 
+    /// A made-up play for this position: (fantasy points, stat changes), using PPR scoring.
+    private static func randomPlay(position: String) -> (Double, [String: Double]) {
+        let y = Double(Int.random(in: 4...38))
+        switch position {
+        case "QB":
+            return [(4 + y * 0.04, ["4": 1, "3": y]), (y * 0.04, ["3": y]), (-2, ["20": 1]),
+                    (Double(Int(y / 3)) * 0.1, ["24": Double(Int(y / 3))])].randomElement()!
+        case "K":
+            return [(3, ["83": 1, "80": 1]), (4, ["83": 1, "77": 1]), (5, ["83": 1, "74": 1]),
+                    (1, ["86": 1])].randomElement()!
+        case "D/ST":
+            return [(1, ["99": 1]), (2, ["95": 1]), (6, ["104": 1, "95": 1]), (2, ["96": 1])].randomElement()!
+        default:
+            return [(1 + y * 0.1, ["53": 1, "42": y]), (7 + y * 0.1, ["43": 1, "53": 1, "42": y]),
+                    (Double(Int(y / 3)) * 0.1, ["24": Double(Int(y / 3))]),
+                    (6 + Double(Int(y / 4)) * 0.1, ["25": 1, "24": Double(Int(y / 4))]),
+                    (-2, ["72": 1])].randomElement()!
+        }
+    }
+
     private static func inventedLeague() -> [MatchupScore] {
         let teamNames = [
             ("Gridiron Gurus", "GURU"), ("Blitz Brigade", "BLTZ"), ("End Zone Elite", "EZE"),
@@ -66,14 +86,15 @@ actor DemoSource: ScoreSource {
     func fetchSnapshot() async throws -> LeagueSnapshot {
         await loadIfNeeded()
         guard !matchups.isEmpty else { return LeagueSnapshot(week: week, matchups: []) }
-        let plays: [Double] = [6, 6, 4, 3, 1.2, 0.8, 2.4, 0.5, 1.0, 1.7, -2, 0.4]
         for _ in 0..<Int.random(in: 1...3) {
             let mi = Int.random(in: matchups.indices)
             let useHome = Bool.random() || matchups[mi].away == nil
             var team = useHome ? matchups[mi].home : matchups[mi].away!
             guard !team.starters.isEmpty else { continue }
             let pi = Int.random(in: team.starters.indices)
-            team.starters[pi].points = (team.starters[pi].points + plays.randomElement()!).rounded(toPlaces: 2)
+            let (points, stats) = Self.randomPlay(position: team.starters[pi].position)
+            team.starters[pi].points = (team.starters[pi].points + points).rounded(toPlaces: 2)
+            for (id, v) in stats { team.starters[pi].stats[id, default: 0] += v }
             team.points = team.starters.reduce(0) { $0 + $1.points }.rounded(toPlaces: 2)
             if useHome { matchups[mi].home = team } else { matchups[mi].away = team }
         }

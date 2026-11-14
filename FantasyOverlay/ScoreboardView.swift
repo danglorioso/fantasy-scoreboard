@@ -249,11 +249,24 @@ struct AlertCard: View {
 
             if let c = change {
                 HStack(spacing: 0) {
-                    Text(c.delta.displaySigned)
-                        .font(.system(size: 170 * k, weight: .black, design: .rounded).monospacedDigit())
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .shadow(color: .black.opacity(0.25), radius: 6 * k, y: 3 * k)
+                    // The point change, with what happened ("TOUCHDOWN · 18 YDS") under it.
+                    VStack(spacing: 8 * k) {
+                        Text(c.delta.displaySigned)
+                            .font(.system(size: (c.play == nil ? 170 : 146) * k, weight: .black, design: .rounded).monospacedDigit())
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .shadow(color: .black.opacity(0.25), radius: 6 * k, y: 3 * k)
+                        if let play = c.play {
+                            Text(play)
+                                .font(.system(size: (play.count > 16 ? 24 : 28) * k, weight: .bold))
+                                .tracking(2.6 * k)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                                .padding(.horizontal, 16 * k)
+                                .padding(.vertical, 7 * k)
+                                .background(Capsule().fill(Color.black.opacity(0.2)))
+                        }
+                    }
                     Spacer(minLength: 16 * k)
                     VStack(spacing: 6 * k) {
                         headshot(for: c.player, size: 160 * k)
