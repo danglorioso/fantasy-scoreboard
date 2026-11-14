@@ -36,7 +36,8 @@ enum Config {
     /// quietly until they reach it.
     static let minimumPointChange: Double = 0.5
     /// Choices offered in the app's setting.
-    static let pointChangeOptions: [Double] = [0.01, 0.5, 1, 2, 3, 6]
+    static let pointChangeOptions: [Double] = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
+                                                1, 1.5, 2, 2.5, 3, 4, 5, 6]
     static let alertOnLeadChange = true
     /// false = PiP sits as a nearly blank dark tile between alerts (popup feel).
     /// true  = PiP shows the full league scoreboard between alerts.
