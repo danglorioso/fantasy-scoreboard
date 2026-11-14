@@ -39,13 +39,13 @@ enum Config {
     /// true  = PiP shows the full league scoreboard between alerts.
     static let showScoreboardWhenIdle = false
     /// Stage 1: the quick, bright point-change burst.
-    static let burstSeconds: Double = 1.0
+    static let burstSeconds: Double = 2.5
     /// A lead change holds its (pulsing) burst longer, because it matters more.
-    static let leadBurstSeconds: Double = 2.5
+    static let leadBurstSeconds: Double = 4.0
     /// The slide from the burst to the details screen.
     static let slideSeconds: Double = 0.45
     /// Stage 2: who scored, whose fantasy team, and where the matchup stands now.
-    static let detailSeconds: Double = 5.0
+    static let detailSeconds: Double = 8.0
     static let fadeOutSeconds: Double = 0.3
     /// Total time one alert is on screen.
     static func alertSeconds(isLeadChange: Bool) -> Double {
