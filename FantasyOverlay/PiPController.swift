@@ -394,7 +394,7 @@ final class FrameStore: @unchecked Sendable {
                                   bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
                                       | CGBitmapInfo.byteOrder32Little.rawValue) else { return }
         let rect = CGRect(x: 0, y: 0, width: w, height: h)
-        ctx.setFillColor(UIColor.black.cgColor)
+        ctx.setFillColor(UIColor(red: 0.043, green: 0.051, blue: 0.071, alpha: 1).cgColor) // AlertCard.ground
         ctx.fill(rect)
         if let img { ctx.draw(img, in: rect) }
     }
