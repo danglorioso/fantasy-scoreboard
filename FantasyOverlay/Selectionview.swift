@@ -8,6 +8,18 @@ struct SelectionView: View {
     var body: some View {
         List {
             Section {
+                Picker("Minimum point change", selection: $tracker.minimumPointChange) {
+                    ForEach(Config.pointChangeOptions, id: \.self) { value in
+                        Text(Self.label(for: value)).tag(value)
+                    }
+                }
+            } header: {
+                Text("Alerts")
+            } footer: {
+                Text("Players only alert once their points move by at least this much. Smaller gains, like each yard a QB throws for, add up until they reach it.")
+            }
+
+            Section {
                 Button(tracker.selectedTeamIds.isEmpty ? "✓ All teams" : "All teams") {
                     tracker.selectedTeamIds = []
                 }
@@ -47,7 +59,18 @@ struct SelectionView: View {
                 Text("Only alert for players in these games. Nothing selected = all games.")
             }
         }
-        .navigationTitle("Teams, Nicknames & Games")
+        .navigationTitle("Settings")
+    }
+
+    private static func label(for value: Double) -> String {
+        switch value {
+        case ..<0.1: return "Any change"
+        case 6: return "6 points (touchdowns)"
+        case 1: return "1 point"
+        default:
+            let number = value == value.rounded() ? String(Int(value)) : String(format: "%.1f", value)
+            return "\(number) points"
+        }
     }
 
     private func teamBinding(_ id: Int) -> Binding<Bool> {
