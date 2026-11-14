@@ -27,9 +27,8 @@ enum Config {
     /// Default short names for fantasy teams, shown on the score rows instead of ESPN's
     /// abbreviation. Key = the full team name as it appears in ESPN. A nickname typed on
     /// the Apple TV (Teams, nicknames & games) overrides the one here for that TV.
-    static let teamNicknames: [String: String] = [
-        // "Double Dan-ger": "DAN",
-    ]
+    /// Example: ["Double Dan-ger": "DAN", "Moizes's Monstrous Team": "MOIZ"]
+    static let teamNicknames: [String: String] = [:]
 
     // Alerts
     /// Smallest per-player change that triggers an alert. 0.01 = "any point change".
