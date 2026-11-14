@@ -31,9 +31,11 @@ enum Config {
     /// Total time each alert is on screen (burst + transition + details + fade out).
     static var alertSeconds: Double { burstSeconds + 0.35 + detailSeconds + 0.3 }
 
-    /// Pixel size of the PiP video. Its shape sets the shape of the floating window:
-    /// square sits neatly over a network logo in a corner. Try 600x480 for a bit wider.
-    static let pipSize = CGSize(width: 540, height: 540)
+    /// Pixel size of the PiP video. tvOS keeps the floating window at its normal width and
+    /// sets the height from this shape, so a wider ratio = a shorter window covering less
+    /// of the game. 960x240 (4:1) is about 45% of a normal PiP window; 960x192 (5:1) is
+    /// about 35%. Narrower shapes (like a square) just get black bars, not a smaller window.
+    static let pipSize = CGSize(width: 960, height: 240)
 
     /// Lets your streaming app keep its audio while our silent PiP runs.
     /// If PiP closes the moment the game starts playing, try flipping this.
