@@ -31,9 +31,12 @@ enum Config {
     static let teamNicknames: [String: String] = [:]
 
     // Alerts
-    /// Smallest per-player change that triggers an alert. 0.01 = "any point change".
-    /// Raise to e.g. 1.0 if QB passing-yard trickles get too chatty.
-    static let minimumPointChange: Double = 0.01
+    /// Default for the "Minimum point change" setting on the Apple TV: the smallest change in
+    /// a player's points that gets an alert. Smaller changes (like each yard a QB gains) add up
+    /// quietly until they reach it.
+    static let minimumPointChange: Double = 0.5
+    /// Choices offered in the app's setting.
+    static let pointChangeOptions: [Double] = [0.01, 0.5, 1, 2, 3, 6]
     static let alertOnLeadChange = true
     /// false = PiP sits as a nearly blank dark tile between alerts (popup feel).
     /// true  = PiP shows the full league scoreboard between alerts.

@@ -16,6 +16,13 @@ final class ScoreTracker: ObservableObject {
     @Published var selectedTeamIds: Set<Int> = [] {
         didSet { saveSelections() }
     }
+    /// Smallest change in a player's points that gets an alert. Saved on this Apple TV.
+    @Published var minimumPointChange: Double = {
+        let saved = UserDefaults.standard.double(forKey: "minimumPointChange")
+        return saved > 0 ? saved : Config.minimumPointChange
+    }() {
+        didSet { UserDefaults.standard.set(minimumPointChange, forKey: "minimumPointChange") }
+    }
     /// NFL games to alert on. Empty = all games.
     @Published var selectedGameIds: Set<String> = [] {
         didSet { saveSelections() }
@@ -24,6 +31,9 @@ final class ScoreTracker: ObservableObject {
     private var source: any ScoreSource
     private var queue: [ScoreEvent] = []
     private var consecutiveFailures = 0
+    /// Each player's points as of their last alert (key "teamId-playerId"). Changes are measured
+    /// from here, so small gains below the threshold add up until together they reach it.
+    private var alertedPoints: [String: Double] = [:]
     private var pollTask: Task<Void, Never>?
     private var alertTask: Task<Void, Never>?
 
@@ -115,6 +125,7 @@ final class ScoreTracker: ObservableObject {
         snapshot = nil
         queue.removeAll()
         recent.removeAll()
+        alertedPoints.removeAll()
         currentEvent = nil
         lastUpdated = nil
         errorMessage = nil
@@ -140,7 +151,8 @@ final class ScoreTracker: ObservableObject {
         do {
             let new = try await source.fetchSnapshot()
             if let old = snapshot, old.week == new.week {
-                enqueue(Self.diff(old: old, new: new, filter: filterFor(new)))
+                enqueue(Self.diff(old: old, new: new, filter: filterFor(new),
+                                  threshold: minimumPointChange, baseline: &alertedPoints))
             }
             snapshot = new
             lastUpdated = Date()
@@ -172,10 +184,13 @@ final class ScoreTracker: ObservableObject {
 
     // MARK: Diffing
 
-    static func diff(old: LeagueSnapshot, new: LeagueSnapshot, filter: AlertFilter = AlertFilter()) -> [ScoreEvent] {
+    /// `baseline` holds each player's points as of their last alert; a player alerts once their
+    /// points have moved by at least `threshold` from it, and the baseline then moves up.
+    static func diff(old: LeagueSnapshot, new: LeagueSnapshot, filter: AlertFilter = AlertFilter(),
+                     threshold rawThreshold: Double, baseline: inout [String: Double]) -> [ScoreEvent] {
         var oldById: [Int: MatchupScore] = [:]
         for m in old.matchups { oldById[m.id] = m }
-        let threshold = max(Config.minimumPointChange, 0.01)
+        let threshold = max(rawThreshold, 0.01)
         var events: [ScoreEvent] = []
 
         for m in new.matchups {
@@ -187,13 +202,27 @@ final class ScoreTracker: ObservableObject {
                 var before: [Int: Double] = [:]
                 for p in oldTeam.starters { before[p.id] = p.points }
 
-                let changes = team.starters.compactMap { p -> PlayerChange? in
-                    guard filter.allowsPlayer(p) else { return nil }
-                    guard let prev = before[p.id] else { return nil } // lineup swap: no alert
-                    let d = (p.points - prev).rounded(toPlaces: 2)
-                    return abs(d) >= threshold ? PlayerChange(player: p, delta: d) : nil
+                var changes: [PlayerChange] = []
+                for p in team.starters {
+                    let key = "\(team.id)-\(p.id)"
+                    guard let prev = before[p.id] else {           // lineup swap: no alert
+                        baseline[key] = p.points
+                        continue
+                    }
+                    let from = baseline[key] ?? prev
+                    guard filter.allowsPlayer(p) else {
+                        baseline[key] = p.points                    // filtered out: don't save up
+                        continue
+                    }
+                    let d = (p.points - from).rounded(toPlaces: 2)
+                    if abs(d) >= threshold {
+                        changes.append(PlayerChange(player: p, delta: d))
+                        baseline[key] = p.points
+                    } else if baseline[key] == nil {
+                        baseline[key] = from
+                    }
                 }
-                .sorted { abs($0.delta) > abs($1.delta) }
+                changes.sort { abs($0.delta) > abs($1.delta) }
 
                 // One alert per player, biggest change first.
                 for change in changes {
