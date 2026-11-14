@@ -27,9 +27,8 @@ enum Config {
     /// Default short names for fantasy teams, shown on the score rows instead of ESPN's
     /// abbreviation. Key = the full team name as it appears in ESPN. A nickname typed on
     /// the Apple TV (Teams, nicknames & games) overrides the one here for that TV.
-    static let teamNicknames: [String: String] = [
-        // "Double Dan-ger": "DAN",
-    ]
+    /// Example: ["Double Dan-ger": "DAN", "Moizes's Monstrous Team": "MOIZ"]
+    static let teamNicknames: [String: String] = [:]
 
     // Alerts
     /// Smallest per-player change that triggers an alert. 0.01 = "any point change".
@@ -40,13 +39,13 @@ enum Config {
     /// true  = PiP shows the full league scoreboard between alerts.
     static let showScoreboardWhenIdle = false
     /// Stage 1: the quick, bright point-change burst.
-    static let burstSeconds: Double = 1.0
+    static let burstSeconds: Double = 2.5
     /// A lead change holds its (pulsing) burst longer, because it matters more.
-    static let leadBurstSeconds: Double = 2.5
+    static let leadBurstSeconds: Double = 4.0
     /// The slide from the burst to the details screen.
     static let slideSeconds: Double = 0.45
     /// Stage 2: who scored, whose fantasy team, and where the matchup stands now.
-    static let detailSeconds: Double = 5.0
+    static let detailSeconds: Double = 8.0
     static let fadeOutSeconds: Double = 0.3
     /// Total time one alert is on screen.
     static func alertSeconds(isLeadChange: Bool) -> Double {

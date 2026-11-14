@@ -64,8 +64,8 @@ Before Sunday, turn on Demo mode and check that the window stays up over your st
 | Setting | Default | What it does |
 |---|---|---|
 | `pollSeconds` | 10 | How often live scores are checked (it backs off automatically if ESPN errors) |
-| `burstSeconds` / `leadBurstSeconds` | 1.0 / 2.5 | How long the burst holds for a point change / a lead change |
-| `detailSeconds` | 5.0 | How long the details screen stays up |
+| `burstSeconds` / `leadBurstSeconds` | 2.5 / 4.0 | How long the burst holds for a point change / a lead change |
+| `detailSeconds` | 8.0 | How long the details screen stays up |
 | `pipSize` | 960x240 | Shape of the floating window (wider ratio = shorter window) |
 | `teamNicknames` | empty | Default short names for teams, by full team name |
 | `minimumPointChange` | 0.01 | Raise to around `1.0` if QB passing-yard ticks are too chatty |

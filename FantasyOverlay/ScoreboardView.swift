@@ -40,7 +40,7 @@ struct ScoreboardView: View {
     private var quietIdle: some View {
         let k = Self.k
         return ZStack {
-            Color.black
+            AlertCard.ground   // same near-black as the details screen, so alerts fade straight into it
             HStack(spacing: 18 * k) {
                 Text("🏈").font(.system(size: 56 * k)).opacity(0.3)
                 Text(ticker ?? status)
@@ -211,12 +211,16 @@ struct AlertCard: View {
 
         ZStack {
             Self.ground
-            details.offset(x: (1 - m) * W)
-            burst.offset(x: -m * W)
+            // Fade only the content: the ground stays, so a fade-out looks like the text
+            // disappearing into the idle tile (which uses the same color).
+            ZStack {
+                details.offset(x: (1 - m) * W)
+                burst.offset(x: -m * W)
+            }
+            .opacity(min(1, intro * 3) * (1 - exit))
         }
         .frame(width: W, height: H)
         .clipped()
-        .opacity(min(1, intro * 3) * (1 - exit))
         .foregroundColor(.white)
     }
 

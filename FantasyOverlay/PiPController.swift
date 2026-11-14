@@ -113,8 +113,12 @@ final class PiPController: NSObject, ObservableObject {
             lastEventId = tracker.currentEvent?.id
             if let event = tracker.currentEvent {
                 let frames = buildAlertTimeline(event)
-                let start = player.currentTime().seconds + scheduleLead
-                FrameStore.shared.setTimeline(start: start, frames: frames)
+                // Back-to-back alerts: start this one exactly where the previous one would have
+                // begun fading out, so the queue plays straight through with no idle gap.
+                let earliest = player.currentTime().seconds + scheduleLead
+                let start = max(earliest, FrameStore.shared.lastFadeStart ?? earliest)
+                FrameStore.shared.addTimeline(start: start, frames: frames,
+                                              fadeSeconds: Config.fadeOutSeconds)
             }
         }
 
@@ -329,23 +333,48 @@ final class FrameStore: @unchecked Sendable {
     static let shared = FrameStore()
     private let lock = NSLock()
     private var idle: CGImage?
-    private var timelineStart = 0.0
-    private var timeline: [(CGImage, Double)] = []
+    private struct Timeline {
+        let start: Double
+        let frames: [(CGImage, Double)]
+        let end: Double
+        let fadeStart: Double
+    }
+    private var timelines: [Timeline] = []
 
     func setIdle(_ image: CGImage) {
         lock.lock(); idle = image; lock.unlock()
     }
 
-    func setTimeline(start: Double, frames: [(CGImage, Double)]) {
-        lock.lock(); timelineStart = start; timeline = frames; lock.unlock()
+    /// Schedules one alert's frames on the video timeline. The last `fadeSeconds` of frames
+    /// are its fade-out, which a following alert scheduled at `fadeStart` replaces.
+    func addTimeline(start: Double, frames: [(CGImage, Double)], fadeSeconds: Double) {
+        let total = frames.reduce(0) { $0 + $1.1 }
+        let tl = Timeline(start: start, frames: frames, end: start + total,
+                          fadeStart: start + max(0, total - fadeSeconds))
+        lock.lock()
+        timelines.removeAll { $0.end < start - 10 }   // drop long-finished alerts
+        timelines.append(tl)
+        lock.unlock()
     }
 
-    /// Which image belongs at video time `t` (seconds).
+    /// When the most recently scheduled alert starts fading out (nil if none yet). A time
+    /// already in the past just means there's nothing to chain onto.
+    var lastFadeStart: Double? {
+        lock.lock(); defer { lock.unlock() }
+        return timelines.last?.fadeStart
+    }
+
+    /// Which image belongs at video time `t` (seconds): the latest alert that has started,
+    /// if it hasn't finished; otherwise the idle tile.
     private func image(at t: Double) -> CGImage? {
         lock.lock(); defer { lock.unlock() }
-        if !timeline.isEmpty, t >= timelineStart {
-            var end = timelineStart
-            for (img, duration) in timeline {
+        var current: Timeline?
+        for tl in timelines where tl.start <= t {
+            if current == nil || tl.start >= current!.start { current = tl }
+        }
+        if let tl = current, t < tl.end {
+            var end = tl.start
+            for (img, duration) in tl.frames {
                 end += duration
                 if t < end { return img }
             }
@@ -365,7 +394,7 @@ final class FrameStore: @unchecked Sendable {
                                   bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
                                       | CGBitmapInfo.byteOrder32Little.rawValue) else { return }
         let rect = CGRect(x: 0, y: 0, width: w, height: h)
-        ctx.setFillColor(UIColor.black.cgColor)
+        ctx.setFillColor(UIColor(red: 0.043, green: 0.051, blue: 0.071, alpha: 1).cgColor) // AlertCard.ground
         ctx.fill(rect)
         if let img { ctx.draw(img, in: rect) }
     }
