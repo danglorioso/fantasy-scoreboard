@@ -4,3 +4,4 @@ DerivedData/
 
 # Private ESPN credentials (copy from Secrets.swift.example)
 FantasyOverlay/Secrets.swift
+FantasyOverlay/Secrets*.swift
