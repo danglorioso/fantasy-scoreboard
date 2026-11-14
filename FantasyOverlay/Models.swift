@@ -99,6 +99,10 @@ struct ScoreEvent: Identifiable {
     var opponent: TeamScore?
     /// `team`'s chance to win the matchup at the time of this alert.
     var winProbability: Double? = nil
+    /// The same numbers just before this change, to show how the matchup moved.
+    var previousWinProbability: Double? = nil
+    var previousTeam: TeamScore? = nil
+    var previousOpponent: TeamScore? = nil
 
     var totalDelta: Double {
         if case .scoring(let changes) = kind { return changes.reduce(0) { $0 + $1.delta } }

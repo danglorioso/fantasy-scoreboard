@@ -139,9 +139,13 @@ final class ScoreTracker: ObservableObject {
         var team = m.home
         team.points += 6
         p.points += 6
+        let before = m.winProbability(for: team.id)
         queue.insert(ScoreEvent(kind: .scoring([PlayerChange(player: p, delta: 6)]),
                                 team: team, opponent: m.away,
-                                winProbability: m.winProbability(for: team.id)), at: 0)
+                                winProbability: before.map { min(0.99, $0 + 0.06) },
+                                previousWinProbability: before,
+                                previousTeam: m.home,
+                                previousOpponent: m.away), at: 0)
     }
 
     // MARK: Diffing
@@ -174,7 +178,10 @@ final class ScoreTracker: ObservableObject {
                     matchupHadAlert = true
                     events.append(ScoreEvent(kind: .scoring([change]), team: team,
                                              opponent: m.opponent(of: team.id),
-                                             winProbability: m.winProbability(for: team.id)))
+                                             winProbability: m.winProbability(for: team.id),
+                                             previousWinProbability: om.winProbability(for: team.id),
+                                             previousTeam: oldTeam,
+                                             previousOpponent: om.opponent(of: team.id)))
                 }
             }
 
@@ -184,7 +191,10 @@ final class ScoreTracker: ObservableObject {
                m.teams.contains(where: { filter.allowsTeam($0.id) }),
                filter.proTeamIds == nil || matchupHadAlert {
                 events.append(ScoreEvent(kind: .leadChange, team: leader, opponent: m.opponent(of: now),
-                                         winProbability: m.winProbability(for: now)))
+                                         winProbability: m.winProbability(for: now),
+                                         previousWinProbability: om.winProbability(for: now),
+                                         previousTeam: om.team(now),
+                                         previousOpponent: om.opponent(of: now)))
             }
         }
         return events

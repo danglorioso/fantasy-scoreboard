@@ -133,25 +133,37 @@ final class PiPController: NSObject, ObservableObject {
         }
     }
 
-    /// Every frame of one alert: pop in → hold big → shrink into the compact layout →
-    /// hold → fade out. Each entry is (image, how long to show it).
+    /// Every frame of one alert. Each entry is (image, how long to show it).
+    ///   burst:   pop in fast, hold the big point change for a moment
+    ///   morph:   swap the burst for the detail screen
+    ///   settle:  win % and projections slide from old values to new
+    ///   details: hold (the longest part: most information to read)
+    ///   exit:    fade out
     private func buildAlertTimeline(_ event: ScoreEvent) -> [(CGImage, Double)] {
         let dt = 1.0 / 30
         var frames: [(CGImage, Double)] = []
-        func add(intro: Double, morph: Double, exit: Double, _ duration: Double) {
-            let view = AlertCard(event: event, intro: intro, morph: morph, exit: exit)
+        func add(intro: Double = 1, morph: Double = 1, settle: Double = 1, exit: Double = 0, _ duration: Double) {
+            let view = AlertCard(event: event, intro: intro, morph: morph, settle: settle, exit: exit)
                 .frame(width: ScoreboardView.size.width, height: ScoreboardView.size.height)
             if let img = render(view) { frames.append((img, duration)) }
         }
+        func steps(_ n: Int) -> [Double] { (1...n).map { Double($0) / Double(n) } }
 
-        let introFrames = 10, morphFrames = 18, exitFrames = 9
-        let bigHold = 1.3
-        for i in 1...introFrames { add(intro: Double(i) / Double(introFrames), morph: 0, exit: 0, dt) }
-        add(intro: 1, morph: 0, exit: 0, bigHold)
-        for i in 1...morphFrames { add(intro: 1, morph: Double(i) / Double(morphFrames), exit: 0, dt) }
-        let used = Double(introFrames + morphFrames + exitFrames) * dt + bigHold
-        add(intro: 1, morph: 1, exit: 0, max(1.0, Config.alertSeconds - used))
-        for i in 1...exitFrames { add(intro: 1, morph: 1, exit: Double(i) / Double(exitFrames), dt) }
+        // Stage 1: burst (Config.burstSeconds total)
+        let introFrames = 7                                  // ~0.23 s pop
+        for t in steps(introFrames) { add(intro: t, morph: 0, settle: 0, dt) }
+        add(morph: 0, settle: 0, max(0.3, Config.burstSeconds - Double(introFrames) * dt))
+
+        // Transition (0.35 s)
+        for t in steps(11) { add(morph: t, settle: 0, dt) }
+
+        // Stage 2: details (Config.detailSeconds total, starting with a 0.6 s settle)
+        let settleFrames = 18
+        for t in steps(settleFrames) { add(settle: t, dt) }
+        add(max(1.0, Config.detailSeconds - Double(settleFrames) * dt))
+
+        // Exit (0.3 s)
+        for t in steps(9) { add(exit: t, dt) }
         return frames
     }
 
