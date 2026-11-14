@@ -10,24 +10,17 @@ struct ScoreboardView: View {
     let event: ScoreEvent?
     let ticker: String?
     let status: String
-    /// 0...1 progress of the alert's entrance animation (1 = fully shown).
-    var appear: Double = 1
-
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color(red: 0.06, green: 0.09, blue: 0.18),
                                     Color(red: 0.02, green: 0.03, blue: 0.08)],
                            startPoint: .top, endPoint: .bottom)
-            if Config.showScoreboardWhenIdle {
+            if let event {
+                AlertCard(event: event)   // static, fully settled (alerts normally animate via PiPController)
+            } else if Config.showScoreboardWhenIdle {
                 board
             } else {
                 quietIdle
-            }
-            if let event {
-                let e = Self.easeOutBack(appear)
-                AlertCard(event: event, pop: e)
-                    .offset(y: (1 - e) * Self.size.height)
-                    .opacity(min(1, appear * 3))
             }
         }
         .frame(width: Self.size.width, height: Self.size.height)
@@ -131,142 +124,165 @@ struct MatchupTile: View {
     }
 }
 
-/// Alert: big change on the left, team + each player's change and new total on the right,
-/// and a thin win-probability bar with both teams' scores stacked at each end.
+/// Two-stage alert, built to be read from the couch in a corner window.
+///
+/// Stage 1 (morph = 0):           Stage 2 (morph = 1):
+///          +6.0                    +6.0 │ J. Chase → 18.4
+///      J. Chase WR                      │ GURU 98.2 – 91.0 BLTZ
+///    Double Dan-ger                     │ 54% ██████████░░░░░
+///
+/// intro 0→1 pops the card in, morph 0→1 shrinks the number into the left column and
+/// brings in the matchup details, exit 0→1 fades it out.
 struct AlertCard: View {
     let event: ScoreEvent
-    /// Entrance animation progress (eased); drives the big number's pop.
-    var pop: Double = 1
+    var intro: Double = 1
+    var morph: Double = 1
+    var exit: Double = 0
+
+    static let green = Color(red: 0.42, green: 0.89, blue: 0.35)
+    static let red = Color(red: 1.0, green: 0.38, blue: 0.38)
+    static let orange = Color(red: 1.0, green: 0.65, blue: 0.2)
+
+    private static let W = ScoreboardView.size.width
+    private static let H = ScoreboardView.size.height
+
+    private var accent: Color {
+        switch event.kind {
+        case .leadChange: return Self.orange
+        case .scoring: return event.totalDelta >= 0 ? Self.green : Self.red
+        }
+    }
+
+    private var change: PlayerChange? {
+        if case .scoring(let changes) = event.kind { return changes.first }
+        return nil
+    }
+
+    private var isLead: Bool { change == nil }
 
     var body: some View {
+        let pop = ScoreboardView.easeOutBack(intro)
+        let m = Self.easeInOut(morph)
+        let bigScale = (0.4 + 0.6 * pop) * Self.lerp(1, isLead ? 0.6 : 0.55, m)
+        let bigY = isLead ? 105.0 : 112.0
+
         ZStack {
-            background
-            VStack(spacing: 10) {
-                HStack(alignment: .center, spacing: 28) {
-                    left
-                        .frame(width: 250)
-                        .scaleEffect(0.6 + 0.4 * pop)
-                    VStack(alignment: .leading, spacing: 4) { details }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                MatchupBar(team: event.team, opponent: event.opponent,
-                           probability: event.winProbability)
+            Color(red: 0.08, green: 0.085, blue: 0.1)
+            HStack(spacing: 0) {
+                accent.frame(width: 14)
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 28)
-            .padding(.vertical, 14)
-            .foregroundColor(.white)
+
+            // The big number (or LEAD CHANGE): center → left column
+            bigText
+                .scaleEffect(bigScale)
+                .position(x: Self.lerp(Self.W / 2, 170, m), y: Self.lerp(bigY, Self.H / 2, m))
+
+            // Stage 1 subtitles: player + fantasy team. Fade out as it shrinks.
+            VStack(spacing: 4) { subtitles }
+                .frame(width: Self.W - 80)
+                .scaleEffect(1 - 0.25 * m)
+                .opacity(min(1, intro * 1.5) * (1 - m))
+                .position(x: Self.W / 2, y: 248 + 30 * m)
+
+            // Stage 2 details: fade/slide in beside the number.
+            VStack(alignment: .leading, spacing: 10) { details }
+                .frame(width: 600, alignment: .leading)
+                .opacity(m)
+                .position(x: 640 + (1 - m) * 50, y: Self.H / 2)
         }
+        .frame(width: Self.W, height: Self.H)
+        .opacity(min(1, intro * 2) * (1 - exit))
+        .foregroundColor(.white)
     }
 
-    private var background: Color {
-        switch event.kind {
-        case .leadChange: return Color(red: 0.93, green: 0.52, blue: 0.08)
-        case .scoring:
-            return event.totalDelta >= 0
-                ? Color(red: 0.07, green: 0.52, blue: 0.27)
-                : Color(red: 0.74, green: 0.14, blue: 0.14)
+    private var bigText: some View {
+        Group {
+            if let c = change {
+                Text(c.delta.signedString)
+                    .font(.system(size: 140, weight: .black, design: .rounded).monospacedDigit())
+            } else {
+                Text("LEAD\nCHANGE")
+                    .font(.system(size: 80, weight: .black, design: .rounded))
+                    .multilineTextAlignment(.center)
+            }
         }
+        .foregroundColor(accent)
+        .fixedSize()
     }
 
-    @ViewBuilder private var left: some View {
-        switch event.kind {
-        case .leadChange:
-            Text("LEAD\nCHANGE")
-                .font(.system(size: 48, weight: .black, design: .rounded))
-                .multilineTextAlignment(.center)
-        case .scoring:
-            Text(event.totalDelta.signedString)
-                .font(.system(size: 96, weight: .black, design: .rounded).monospacedDigit())
+    @ViewBuilder private var subtitles: some View {
+        if let c = change {
+            Text("\(c.player.shortName) \(c.player.position)")
+                .font(.system(size: 48, weight: .heavy, design: .rounded))
                 .lineLimit(1).minimumScaleFactor(0.5)
+            Text(event.team.name)
+                .font(.system(size: 32, weight: .semibold))
+                .opacity(0.75)
+                .lineLimit(1).minimumScaleFactor(0.5)
+        } else {
+            Text(event.team.name)
+                .font(.system(size: 44, weight: .heavy, design: .rounded))
+                .lineLimit(1).minimumScaleFactor(0.5)
+            if let opp = event.opponent {
+                Text("takes the lead vs \(opp.name)")
+                    .font(.system(size: 30, weight: .semibold))
+                    .opacity(0.75)
+                    .lineLimit(1).minimumScaleFactor(0.5)
+            }
         }
     }
 
     @ViewBuilder private var details: some View {
-        Text(event.team.name)
-            .font(.system(size: 36, weight: .heavy, design: .rounded))
-            .lineLimit(1).minimumScaleFactor(0.5)
-
-        switch event.kind {
-        case .scoring(let changes):
-            ForEach(Array(changes.prefix(2)), id: \.player.id) { c in
-                Text("\(c.player.shortName) \(c.player.position)  \(c.delta.signedString) → \(c.player.points.formatted1)")
-                    .font(.system(size: 28, weight: .semibold).monospacedDigit())
-                    .lineLimit(1).minimumScaleFactor(0.6)
-            }
-            if changes.count > 2 {
-                Text("+\(changes.count - 2) more")
-                    .font(.system(size: 20, weight: .medium))
-                    .opacity(0.8)
-            }
-        case .leadChange:
-            if let opp = event.opponent {
-                Text("now leads \(opp.name)")
-                    .font(.system(size: 28, weight: .semibold))
-                    .lineLimit(1).minimumScaleFactor(0.6)
-            }
-        }
-    }
-}
-
-/// Team name / score / projection stacked at each end, thin probability bar between.
-struct MatchupBar: View {
-    let team: TeamScore
-    let opponent: TeamScore?
-    let probability: Double?
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 16) {
-            stack(team, alignment: .leading)
-
-            if let opponent {
-                if let p = probability {
-                    Text(percent(p))
-                        .font(.system(size: 16, weight: .semibold).monospacedDigit())
-                        .opacity(0.85)
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(Color.white.opacity(0.25))
-                            Capsule().fill(Color.white)
-                                .frame(width: max(6, geo.size.width * p))
-                        }
-                        .frame(height: 8)
-                        .frame(maxHeight: .infinity)
-                    }
-                    .frame(height: 20)
-                    Text(percent(1 - p))
-                        .font(.system(size: 16, weight: .semibold).monospacedDigit())
-                        .opacity(0.85)
-                } else {
-                    Spacer()
-                    Text("vs").font(.system(size: 20, weight: .semibold)).opacity(0.7)
-                    Spacer()
+        // Row 1: player and their new total (or who leads now)
+        Group {
+            if let c = change {
+                HStack(alignment: .firstTextBaseline, spacing: 14) {
+                    Text(c.player.shortName).fontWeight(.heavy)
+                    Text("→ \(c.player.points.formatted1)").opacity(0.75)
                 }
-                stack(opponent, alignment: .trailing).opacity(0.85)
             } else {
-                Spacer()
+                Text("\(event.team.abbrev) leads").fontWeight(.heavy)
+            }
+        }
+        .font(.system(size: 46, weight: .bold, design: .rounded).monospacedDigit())
+        .lineLimit(1).minimumScaleFactor(0.5)
+
+        // Row 2: where the matchup stands
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(event.team.abbrev).opacity(0.8)
+            Text(event.team.points.formatted1).fontWeight(.black)
+            if let opp = event.opponent {
+                Text("–").opacity(0.5)
+                Text(opp.points.formatted1).fontWeight(.black).opacity(0.85)
+                Text(opp.abbrev).opacity(0.65)
+            }
+        }
+        .font(.system(size: 44, weight: .bold, design: .rounded).monospacedDigit())
+        .lineLimit(1).minimumScaleFactor(0.5)
+
+        // Row 3: win chance for the alert's team
+        if let p = event.winProbability {
+            HStack(spacing: 14) {
+                Text("\(Int((p * 100).rounded()))%")
+                    .font(.system(size: 32, weight: .heavy, design: .rounded).monospacedDigit())
+                    .frame(width: 90, alignment: .leading)
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.2))
+                        Capsule().fill(Self.green)
+                            .frame(width: max(12, geo.size.width * min(1, max(0, p))))
+                    }
+                }
+                .frame(height: 18)
             }
         }
     }
 
-    private func stack(_ t: TeamScore, alignment: HorizontalAlignment) -> some View {
-        VStack(alignment: alignment, spacing: 0) {
-            Text(t.abbrev)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .opacity(0.85)
-            Text(t.points.formatted1)
-                .font(.system(size: 28, weight: .heavy, design: .rounded).monospacedDigit())
-            if let proj = t.projectedTotal {
-                Text("proj \(proj.formatted1)")
-                    .font(.system(size: 14, weight: .medium).monospacedDigit())
-                    .opacity(0.75)
-            }
-        }
-        .lineLimit(1)
-        .frame(minWidth: 110, alignment: alignment == .leading ? .leading : .trailing)
-    }
+    static func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double { a + (b - a) * t }
 
-    private func percent(_ p: Double) -> String {
-        "\(Int((p * 100).rounded()))%"
+    static func easeInOut(_ x: Double) -> Double {
+        let t = min(1, max(0, x))
+        return t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2
     }
 }

@@ -169,9 +169,10 @@ final class ScoreTracker: ObservableObject {
                 }
                 .sorted { abs($0.delta) > abs($1.delta) }
 
-                if !changes.isEmpty {
+                // One alert per player, biggest change first.
+                for change in changes {
                     matchupHadAlert = true
-                    events.append(ScoreEvent(kind: .scoring(changes), team: team,
+                    events.append(ScoreEvent(kind: .scoring([change]), team: team,
                                              opponent: m.opponent(of: team.id),
                                              winProbability: m.winProbability(for: team.id)))
                 }
@@ -189,8 +190,7 @@ final class ScoreTracker: ObservableObject {
         return events
     }
 
-    /// Every update gets its own card, shown in order for Config.alertSeconds each.
-    /// (Within a single poll, a team's changes are grouped into one card.)
+    /// Every player's point change gets its own card, shown in order for Config.alertSeconds each.
     private func enqueue(_ events: [ScoreEvent]) {
         queue.append(contentsOf: events)
     }

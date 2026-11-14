@@ -26,9 +26,9 @@ final class PiPController: NSObject, ObservableObject {
     private var didSetUp = false
     private var lastRenderKey = ""
     private var lastEventId: UUID?
-    private var animationStart = Date.distantPast
-    private let animationSeconds = 0.45
-    private var isAnimating: Bool { Date().timeIntervalSince(animationStart) < animationSeconds }
+    /// How far ahead of the video's current time an alert is scheduled, so the player
+    /// hasn't already composed those frames (that's what made it choppy before).
+    private let scheduleLead = 0.6
 
     func setUp(tracker: ScoreTracker) {
         guard !didSetUp else { return }
@@ -45,8 +45,7 @@ final class PiPController: NSObject, ObservableObject {
             while !Task.isCancelled {
                 guard let self else { return }
                 self.renderFrame(tracker)
-                // Fast ticks only while an alert is animating in; otherwise stay lazy.
-                try? await Task.sleep(for: .milliseconds(self.isAnimating ? 50 : 300))
+                try? await Task.sleep(for: .milliseconds(250))
             }
         }
 
@@ -109,34 +108,58 @@ final class PiPController: NSObject, ObservableObject {
     private func renderFrame(_ tracker: ScoreTracker) {
         updateDebugStatus()
 
-        // Only redraw when something on screen actually changed (saves CPU in the background,
+        // New alert: pre-render its whole animation and schedule it on the video's clock.
+        if tracker.currentEvent?.id != lastEventId {
+            lastEventId = tracker.currentEvent?.id
+            if let event = tracker.currentEvent {
+                let frames = buildAlertTimeline(event)
+                let start = player.currentTime().seconds + scheduleLead
+                FrameStore.shared.setTimeline(start: start, frames: frames)
+            }
+        }
+
+        // Idle tile: only redraw when it actually changes (saves CPU in the background,
         // where tvOS kills apps that work too hard).
         let snapshotKey = tracker.snapshot.map { s in
             s.matchups.map { "\($0.home.points)-\($0.away?.points ?? 0)" }.joined(separator: ",")
         } ?? "none"
-        if tracker.currentEvent?.id != lastEventId {
-            lastEventId = tracker.currentEvent?.id
-            if lastEventId != nil { animationStart = Date() }
-        }
-        let progress = min(1, Date().timeIntervalSince(animationStart) / animationSeconds)
-
-        let key = [snapshotKey, tracker.currentEvent?.id.uuidString ?? "idle",
-                   tracker.recent.first ?? "", tracker.statusLine,
-                   String(format: "%.2f", progress)].joined(separator: "|")
+        let key = [snapshotKey, tracker.recent.first ?? "", tracker.statusLine].joined(separator: "|")
         guard key != lastRenderKey else { return }
         lastRenderKey = key
+        if let image = render(ScoreboardView(snapshot: tracker.snapshot, event: nil,
+                                             ticker: tracker.recent.first,
+                                             status: tracker.statusLine)) {
+            FrameStore.shared.setIdle(image)
+        }
+    }
 
-        let view = ScoreboardView(snapshot: tracker.snapshot,
-                                  event: tracker.currentEvent,
-                                  ticker: tracker.recent.first,
-                                  status: tracker.statusLine,
-                                  appear: progress)
+    /// Every frame of one alert: pop in → hold big → shrink into the compact layout →
+    /// hold → fade out. Each entry is (image, how long to show it).
+    private func buildAlertTimeline(_ event: ScoreEvent) -> [(CGImage, Double)] {
+        let dt = 1.0 / 30
+        var frames: [(CGImage, Double)] = []
+        func add(intro: Double, morph: Double, exit: Double, _ duration: Double) {
+            let view = AlertCard(event: event, intro: intro, morph: morph, exit: exit)
+                .frame(width: ScoreboardView.size.width, height: ScoreboardView.size.height)
+            if let img = render(view) { frames.append((img, duration)) }
+        }
+
+        let introFrames = 10, morphFrames = 18, exitFrames = 9
+        let bigHold = 1.3
+        for i in 1...introFrames { add(intro: Double(i) / Double(introFrames), morph: 0, exit: 0, dt) }
+        add(intro: 1, morph: 0, exit: 0, bigHold)
+        for i in 1...morphFrames { add(intro: 1, morph: Double(i) / Double(morphFrames), exit: 0, dt) }
+        let used = Double(introFrames + morphFrames + exitFrames) * dt + bigHold
+        add(intro: 1, morph: 1, exit: 0, max(1.0, Config.alertSeconds - used))
+        for i in 1...exitFrames { add(intro: 1, morph: 1, exit: Double(i) / Double(exitFrames), dt) }
+        return frames
+    }
+
+    private func render<V: View>(_ view: V) -> CGImage? {
         let renderer = ImageRenderer(content: view)
         renderer.proposedSize = ProposedViewSize(ScoreboardView.size)
         renderer.scale = 1
-        if let image = renderer.cgImage {
-            FrameStore.shared.set(image)
-        }
+        return renderer.cgImage
     }
 
     private func updateDebugStatus() {
@@ -197,7 +220,7 @@ final class PiPController: NSObject, ObservableObject {
 
         let videoComposition = AVMutableVideoComposition()
         videoComposition.customVideoCompositorClass = ScoreboardCompositor.self
-        videoComposition.frameDuration = CMTime(value: 1, timescale: 20) // smooth enough for the slide-in; each frame just copies the cached image
+        videoComposition.frameDuration = CMTime(value: 1, timescale: 30) // 30 fps; each frame just copies a pre-rendered image
         videoComposition.renderSize = size
         videoComposition.instructions = [instruction]
 
@@ -273,18 +296,38 @@ extension PiPController: AVPictureInPictureControllerDelegate {
 
 // MARK: - Frame plumbing
 
-/// Latest scoreboard image, shared between the main thread (writer) and the compositor (reader).
+/// Images for the video: an idle tile, plus a pre-rendered alert animation scheduled
+/// at a point on the video's timeline. Written on the main thread, read by the compositor.
 final class FrameStore: @unchecked Sendable {
     static let shared = FrameStore()
     private let lock = NSLock()
-    private var image: CGImage?
+    private var idle: CGImage?
+    private var timelineStart = 0.0
+    private var timeline: [(CGImage, Double)] = []
 
-    func set(_ newImage: CGImage) {
-        lock.lock(); image = newImage; lock.unlock()
+    func setIdle(_ image: CGImage) {
+        lock.lock(); idle = image; lock.unlock()
     }
 
-    func draw(into pb: CVPixelBuffer) {
-        lock.lock(); let img = image; lock.unlock()
+    func setTimeline(start: Double, frames: [(CGImage, Double)]) {
+        lock.lock(); timelineStart = start; timeline = frames; lock.unlock()
+    }
+
+    /// Which image belongs at video time `t` (seconds).
+    private func image(at t: Double) -> CGImage? {
+        lock.lock(); defer { lock.unlock() }
+        if !timeline.isEmpty, t >= timelineStart {
+            var end = timelineStart
+            for (img, duration) in timeline {
+                end += duration
+                if t < end { return img }
+            }
+        }
+        return idle
+    }
+
+    func draw(into pb: CVPixelBuffer, at t: Double) {
+        let img = image(at: t)
 
         CVPixelBufferLockBaseAddress(pb, [])
         defer { CVPixelBufferUnlockBaseAddress(pb, []) }
@@ -331,7 +374,7 @@ final class ScoreboardCompositor: NSObject, AVVideoCompositing, @unchecked Senda
             request.finish(with: NSError(domain: "FantasyOverlay", code: 6))
             return
         }
-        FrameStore.shared.draw(into: out)
+        FrameStore.shared.draw(into: out, at: CMTimeGetSeconds(request.compositionTime))
         request.finish(withComposedVideoFrame: out)
     }
 }
