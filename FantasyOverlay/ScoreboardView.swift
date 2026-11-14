@@ -250,7 +250,7 @@ struct AlertCard: View {
             if let c = change {
                 HStack(spacing: 0) {
                     // The point change, with what happened ("TOUCHDOWN · 18 YDS") under it.
-                    VStack(spacing: 8 * k) {
+                    VStack(spacing: -4 * k) {
                         Text(c.delta.displaySigned)
                             .font(.system(size: (c.play == nil ? 170 : 146) * k, weight: .black, design: .rounded).monospacedDigit())
                             .lineLimit(1)
@@ -267,6 +267,9 @@ struct AlertCard: View {
                                 .background(Capsule().fill(Color.black.opacity(0.2)))
                         }
                     }
+                    // Lift the pair a little so the label sits midway between the number and the
+                    // bottom edge instead of hugging it.
+                    .offset(y: c.play == nil ? 0 : -8 * k)
                     Spacer(minLength: 16 * k)
                     VStack(spacing: 6 * k) {
                         headshot(for: c.player, size: 160 * k)
