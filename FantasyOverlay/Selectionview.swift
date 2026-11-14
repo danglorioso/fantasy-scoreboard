@@ -4,19 +4,41 @@ import SwiftUI
 /// Nothing selected in a section = everything in that section.
 struct SelectionView: View {
     @EnvironmentObject private var tracker: ScoreTracker
+    @State private var exactText = ""
+
+    /// The presets, plus a typed-in amount if it isn't one of them.
+    private var pickerOptions: [Double] {
+        var options = Config.pointChangeOptions
+        if !options.contains(where: { abs($0 - tracker.minimumPointChange) < 0.0001 }) {
+            options.append(tracker.minimumPointChange)
+            options.sort()
+        }
+        return options
+    }
+
+    private func applyExact() {
+        let cleaned = exactText.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)
+        if let value = Double(cleaned), value > 0 {
+            tracker.minimumPointChange = max(0.01, (value * 100).rounded() / 100)
+        }
+        exactText = ""
+    }
 
     var body: some View {
         List {
             Section {
                 Picker("Minimum point change", selection: $tracker.minimumPointChange) {
-                    ForEach(Config.pointChangeOptions, id: \.self) { value in
+                    ForEach(pickerOptions, id: \.self) { value in
                         Text(Self.label(for: value)).tag(value)
                     }
                 }
+                TextField("Exact amount, e.g. 0.25", text: $exactText)
+                    .keyboardType(.decimalPad)
+                    .onSubmit(applyExact)
             } header: {
                 Text("Alerts")
             } footer: {
-                Text("Players only alert once their points move by at least this much. Smaller gains, like each yard a QB throws for, add up until they reach it.")
+                Text("Players only alert once their points move by at least this much. Smaller gains, like each yard a QB throws for, add up until they reach it. Pick a preset or type any amount from 0.01 up.")
             }
 
             Section {
@@ -63,13 +85,15 @@ struct SelectionView: View {
     }
 
     private static func label(for value: Double) -> String {
-        switch value {
-        case ..<0.1: return "Any change"
-        case 6: return "6 points (touchdowns)"
-        case 1: return "1 point"
-        default:
-            let number = value == value.rounded() ? String(Int(value)) : String(format: "%.1f", value)
-            return "\(number) points"
+        let rounded = (value * 100).rounded() / 100
+        var number = String(format: "%.2f", rounded)
+        while number.hasSuffix("0") { number.removeLast() }   // 0.50 → 0.5, 2.00 → 2.
+        if number.hasSuffix(".") { number.removeLast() }       // 2. → 2
+        let unit = rounded == 1 ? "point" : "points"
+        switch rounded {
+        case ..<0.015: return "\(number) \(unit) (any change)"
+        case 6: return "\(number) \(unit) (touchdowns)"
+        default: return "\(number) \(unit)"
         }
     }
 
