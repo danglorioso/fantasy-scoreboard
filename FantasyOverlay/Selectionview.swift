@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Pick which fantasy teams and which NFL games trigger alerts.
+/// Pick which fantasy teams and which NFL games trigger alerts, and give teams nicknames.
 /// Nothing selected in a section = everything in that section.
 struct SelectionView: View {
     @EnvironmentObject private var tracker: ScoreTracker
@@ -16,14 +16,16 @@ struct SelectionView: View {
                         HStack {
                             Text(team.name)
                             Spacer()
-                            Text(team.abbrev).foregroundStyle(.secondary)
+                            Text(team.label).foregroundStyle(.secondary)
                         }
                     }
+                    TextField("Nickname for \(team.name) (ESPN: \(team.abbrev))", text: nicknameBinding(team))
+                        .autocorrectionDisabled()
                 }
             } header: {
                 Text("Fantasy teams")
             } footer: {
-                Text("Only alert for these teams. Nothing selected = all teams.")
+                Text("Only alert for these teams. Nothing selected = all teams. A nickname (up to \(Nicknames.maxLength) characters) replaces ESPN's abbreviation on the score rows.")
             }
 
             Section {
@@ -45,7 +47,7 @@ struct SelectionView: View {
                 Text("Only alert for players in these games. Nothing selected = all games.")
             }
         }
-        .navigationTitle("Teams & Games")
+        .navigationTitle("Teams, Nicknames & Games")
     }
 
     private func teamBinding(_ id: Int) -> Binding<Bool> {
@@ -54,6 +56,13 @@ struct SelectionView: View {
             set: { on in
                 if on { tracker.selectedTeamIds.insert(id) } else { tracker.selectedTeamIds.remove(id) }
             }
+        )
+    }
+
+    private func nicknameBinding(_ team: TeamScore) -> Binding<String> {
+        Binding(
+            get: { tracker.savedNickname(for: team) },
+            set: { tracker.setNickname($0, for: team) }
         )
     }
 

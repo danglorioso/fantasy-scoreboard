@@ -23,6 +23,7 @@ final class ScoreTracker: ObservableObject {
 
     private var source: any ScoreSource
     private var queue: [ScoreEvent] = []
+    private var consecutiveFailures = 0
     private var pollTask: Task<Void, Never>?
     private var alertTask: Task<Void, Never>?
 
@@ -41,6 +42,15 @@ final class ScoreTracker: ObservableObject {
         let liveGames = (snapshot?.games ?? []).filter { selectedGameIds.contains($0.id) }.count
         let games = liveGames == 0 ? "all games" : "\(liveGames) game\(liveGames == 1 ? "" : "s")"
         return "\(teams) · \(games)"
+    }
+
+    // MARK: Team nicknames
+
+    func savedNickname(for team: TeamScore) -> String { Nicknames.saved(for: team.name) }
+
+    func setNickname(_ value: String, for team: TeamScore) {
+        objectWillChange.send()
+        Nicknames.set(value, for: team.name)
     }
 
     private var storagePrefix: String { demoMode ? "demo." : "live." }
@@ -81,7 +91,12 @@ final class ScoreTracker: ObservableObject {
             while !Task.isCancelled {
                 guard let self else { return }
                 await self.pollOnce()
-                let wait = self.demoMode ? Config.demoPollSeconds : Config.pollSeconds
+                var wait = self.demoMode ? Config.demoPollSeconds : Config.pollSeconds
+                // Back off when ESPN is erroring (or throttling us); recover once it works again.
+                if self.consecutiveFailures > 0, !Config.backoffSeconds.isEmpty {
+                    let i = min(self.consecutiveFailures, Config.backoffSeconds.count) - 1
+                    wait = max(wait, Config.backoffSeconds[i])
+                }
                 try? await Task.sleep(for: .seconds(wait))
             }
         }
@@ -103,6 +118,7 @@ final class ScoreTracker: ObservableObject {
         currentEvent = nil
         lastUpdated = nil
         errorMessage = nil
+        consecutiveFailures = 0
         start()
     }
 
@@ -129,8 +145,14 @@ final class ScoreTracker: ObservableObject {
             snapshot = new
             lastUpdated = Date()
             errorMessage = nil
+            consecutiveFailures = 0
+
+            // Get player photos ready before anyone scores.
+            let photos = new.matchups.flatMap(\.teams).flatMap(\.starters).compactMap(\.headshotURL)
+            Task.detached(priority: .utility) { await HeadshotCache.shared.prefetch(photos) }
         } catch {
             errorMessage = error.localizedDescription
+            consecutiveFailures += 1
         }
     }
 
@@ -139,9 +161,13 @@ final class ScoreTracker: ObservableObject {
         var team = m.home
         team.points += 6
         p.points += 6
+        let before = m.winProbability(for: team.id)
         queue.insert(ScoreEvent(kind: .scoring([PlayerChange(player: p, delta: 6)]),
                                 team: team, opponent: m.away,
-                                winProbability: m.winProbability(for: team.id)), at: 0)
+                                winProbability: before.map { min(0.99, $0 + 0.06) },
+                                previousWinProbability: before,
+                                previousTeam: m.home,
+                                previousOpponent: m.away), at: 0)
     }
 
     // MARK: Diffing
@@ -174,7 +200,10 @@ final class ScoreTracker: ObservableObject {
                     matchupHadAlert = true
                     events.append(ScoreEvent(kind: .scoring([change]), team: team,
                                              opponent: m.opponent(of: team.id),
-                                             winProbability: m.winProbability(for: team.id)))
+                                             winProbability: m.winProbability(for: team.id),
+                                             previousWinProbability: om.winProbability(for: team.id),
+                                             previousTeam: oldTeam,
+                                             previousOpponent: om.opponent(of: team.id)))
                 }
             }
 
@@ -184,13 +213,16 @@ final class ScoreTracker: ObservableObject {
                m.teams.contains(where: { filter.allowsTeam($0.id) }),
                filter.proTeamIds == nil || matchupHadAlert {
                 events.append(ScoreEvent(kind: .leadChange, team: leader, opponent: m.opponent(of: now),
-                                         winProbability: m.winProbability(for: now)))
+                                         winProbability: m.winProbability(for: now),
+                                         previousWinProbability: om.winProbability(for: now),
+                                         previousTeam: om.team(now),
+                                         previousOpponent: om.opponent(of: now)))
             }
         }
         return events
     }
 
-    /// Every player's point change gets its own card, shown in order for Config.alertSeconds each.
+    /// Every player's point change gets its own card, shown in order, one after another.
     private func enqueue(_ events: [ScoreEvent]) {
         queue.append(contentsOf: events)
     }
@@ -208,7 +240,7 @@ final class ScoreTracker: ObservableObject {
         recent.insert(event.tickerText, at: 0)
         recent = Array(recent.prefix(5))
 
-        try? await Task.sleep(for: .seconds(Config.alertSeconds))
+        try? await Task.sleep(for: .seconds(Config.alertSeconds(isLeadChange: event.isLeadChange)))
         currentEvent = nil
         try? await Task.sleep(for: .milliseconds(400))
     }

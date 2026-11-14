@@ -49,7 +49,7 @@ struct ContentView: View {
                     SelectionView()
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Choose teams & games")
+                        Text("Teams, nicknames & games")
                         Text(tracker.selectionSummary).font(.caption).foregroundStyle(.secondary)
                     }
                 }

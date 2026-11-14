@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 protocol ScoreSource {
     func fetchSnapshot() async throws -> LeagueSnapshot
@@ -11,7 +12,7 @@ enum ESPNError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured: return "Fill in Config.swift (league ID + cookies), or turn on Demo mode."
+        case .notConfigured: return "Fill in Secrets.swift (league ID + cookies), or turn on Demo mode."
         case .http(401), .http(403): return "ESPN rejected the cookies (HTTP 401/403). Re-copy espn_s2 and SWID."
         case .http(404): return "League not found (HTTP 404). Check leagueID and season."
         case .http(let code): return "ESPN returned HTTP \(code)."
@@ -21,11 +22,31 @@ enum ESPNError: LocalizedError {
 }
 
 /// Talks to ESPN's (unofficial) fantasy v3 API — the same endpoints cwendt94/espn-api uses.
-struct ESPNSource: ScoreSource {
+///
+/// Each check makes one request (live box scores). League info and NFL game clocks are
+/// cached and refreshed on their own, slower schedules, so frequent checks stay light.
+actor ESPNSource: ScoreSource {
     let leagueID: String
     let season: Int
     let espnS2: String
     let swid: String
+
+    private struct Meta {
+        let week: Int
+        let matchupPeriod: Int
+        let teams: [Int: ESPNLeague.Team]
+        let fetchedAt: Date
+    }
+    private var meta: Meta?
+    private var games: [NFLGame] = []
+    private var gamesFetchedAt = Date.distantPast
+
+    init(leagueID: String, season: Int, espnS2: String, swid: String) {
+        self.leagueID = leagueID
+        self.season = season
+        self.espnS2 = espnS2
+        self.swid = swid
+    }
 
     private var baseURL: URL {
         URL(string: "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/\(season)/segments/0/leagues/\(leagueID)")!
@@ -33,34 +54,48 @@ struct ESPNSource: ScoreSource {
 
     func fetchSnapshot() async throws -> LeagueSnapshot {
         guard Config.isConfigured else { throw ESPNError.notConfigured }
+        let now = Date()
 
-        // 1) Which week is it + team names
-        let meta = try await get(views: ["mStatus", "mTeam"], scoringPeriod: nil)
-        let week = meta.scoringPeriodId ?? 1
-        let matchupPeriod = meta.status?.currentMatchupPeriod ?? week
-        var teamsById: [Int: ESPNLeague.Team] = [:]
-        for t in meta.teams ?? [] { teamsById[t.id] = t }
+        // 1) Which week is it + team names (cached; refreshed every few minutes)
+        if meta == nil || now.timeIntervalSince(meta!.fetchedAt) > Config.metaRefreshSeconds {
+            do {
+                let m = try await get(views: ["mStatus", "mTeam"], scoringPeriod: nil)
+                let week = m.scoringPeriodId ?? 1
+                var teamsById: [Int: ESPNLeague.Team] = [:]
+                for t in m.teams ?? [] { teamsById[t.id] = t }
+                meta = Meta(week: week, matchupPeriod: m.status?.currentMatchupPeriod ?? week,
+                            teams: teamsById, fetchedAt: now)
+            } catch {
+                if meta == nil { throw error }   // keep using the cached copy otherwise
+            }
+        }
+        guard let meta else { throw ESPNError.badResponse("no league info") }
 
-        // 2) Live box scores for this week (includes starters' fantasy points + projections),
-        //    and NFL game clocks for the win-probability estimate, fetched in parallel.
-        async let gamesTask = try? NFLGameClock.fetchGames()
-        let live = try await get(views: ["mMatchupScore", "mBoxscore"], scoringPeriod: week)
-        let games = await gamesTask
+        // 2) NFL game clocks for the win-probability estimate (cached; refreshed every 30 s)
+        if now.timeIntervalSince(gamesFetchedAt) > Config.clockRefreshSeconds {
+            if let fresh = try? await NFLGameClock.fetchGames() {
+                games = fresh
+                gamesFetchedAt = now
+            }
+        }
         var clock: [Int: Double]? = nil
-        if let games {
+        if !games.isEmpty {
             var map: [Int: Double] = [:]
             for g in games { for t in g.teamIds { map[t] = g.remaining } }
             clock = map
         }
 
+        // 3) Live box scores for this week (starters' fantasy points + projections)
+        let live = try await get(views: ["mMatchupScore", "mBoxscore"], scoringPeriod: meta.week)
+
         let matchups: [MatchupScore] = (live.schedule ?? [])
-            .filter { $0.matchupPeriodId == matchupPeriod }
+            .filter { $0.matchupPeriodId == meta.matchupPeriod }
             .compactMap { m in
                 guard let home = m.home else { return nil }
                 var matchup = MatchupScore(
                     id: m.id,
-                    home: teamScore(home, teamsById, week),
-                    away: m.away.map { teamScore($0, teamsById, week) }
+                    home: teamScore(home, meta.teams, meta.week),
+                    away: m.away.map { teamScore($0, meta.teams, meta.week) }
                 )
                 if let clock {
                     // Teams not on the scoreboard (bye) have nothing left to play.
@@ -69,7 +104,7 @@ struct ESPNSource: ScoreSource {
                 return matchup
             }
 
-        return LeagueSnapshot(week: week, matchups: matchups, games: games ?? [])
+        return LeagueSnapshot(week: meta.week, matchups: matchups, games: games)
     }
 
     private func teamScore(_ side: ESPNLeague.Side, _ teams: [Int: ESPNLeague.Team], _ week: Int) -> TeamScore {
@@ -82,13 +117,19 @@ struct ESPNSource: ScoreSource {
                 let weekStat = player?.stats?.first { $0.scoringPeriodId == week && $0.statSourceId == 0 }?.appliedTotal
                 let projection = player?.stats?.first { $0.scoringPeriodId == week && $0.statSourceId == 1 }?.appliedTotal
                 let pts = weekStat ?? e.playerPoolEntry?.appliedStatTotal ?? 0
+                let position = ESPNPosition.name(player?.defaultPositionId)
+                let proTeamId = player?.proTeamId ?? 0
+                let photo = position == "D/ST"
+                    ? NFLTeams.logoURL(proTeamId: proTeamId)
+                    : URL(string: "https://a.espncdn.com/i/headshots/nfl/players/full/\(e.playerId).png")
                 return PlayerScore(
                     id: e.playerId,
                     name: player?.fullName ?? "Player \(e.playerId)",
-                    position: ESPNPosition.name(player?.defaultPositionId),
+                    position: position,
                     points: pts.rounded(toPlaces: 2),
                     projected: projection ?? 0,
-                    proTeamId: player?.proTeamId ?? 0
+                    proTeamId: proTeamId,
+                    headshotURL: photo
                 )
             }
 
@@ -187,5 +228,71 @@ struct ESPNLeague: Decodable {
         let scoringPeriodId: Int?
         let statSourceId: Int?
         let appliedTotal: Double?
+    }
+}
+
+// MARK: - Player photos
+
+/// Downloads player headshots ahead of time and keeps small copies in memory, so an
+/// alert can draw the photo instantly. Safe to use from any thread.
+final class HeadshotCache: @unchecked Sendable {
+    static let shared = HeadshotCache()
+
+    private let lock = NSLock()
+    private var images: [URL: CGImage] = [:]
+    private var attempted: Set<URL> = []
+
+    func image(for url: URL?) -> CGImage? {
+        guard let url else { return nil }
+        lock.lock(); defer { lock.unlock() }
+        return images[url]
+    }
+
+    /// Fetches any of these that haven't been tried yet (a few at a time).
+    func prefetch(_ urls: [URL]) async {
+        let todo = claim(urls)
+        guard !todo.isEmpty else { return }
+        await withTaskGroup(of: Void.self) { group in
+            var remaining = todo.makeIterator()
+            for _ in 0..<4 {
+                if let url = remaining.next() { group.addTask { await self.load(url) } }
+            }
+            while await group.next() != nil {
+                if let url = remaining.next() { group.addTask { await self.load(url) } }
+            }
+        }
+    }
+
+    private func claim(_ urls: [URL]) -> [URL] {
+        lock.lock(); defer { lock.unlock() }
+        var out: [URL] = []
+        for u in urls where !attempted.contains(u) {
+            attempted.insert(u)
+            out.append(u)
+        }
+        return out
+    }
+
+    private func store(_ image: CGImage, for url: URL) {
+        lock.lock(); defer { lock.unlock() }
+        images[url] = image
+    }
+
+    private func load(_ url: URL) async {
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 15
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let full = UIImage(data: data), full.size.width > 0 else { return }
+
+        // Keep a small copy: ~100 full-size photos would use too much memory in the background.
+        let width: CGFloat = 240
+        let size = CGSize(width: width, height: (width * full.size.height / full.size.width).rounded())
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let small = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            full.draw(in: CGRect(origin: .zero, size: size))
+        }
+        if let cg = small.cgImage { store(cg, for: url) }
     }
 }

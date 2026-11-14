@@ -1,6 +1,6 @@
 # Fantasy Overlay (tvOS)
 
-This app floats a Picture-in-Picture window over whatever you're watching on Apple TV (YouTube TV, ESPN, Peacock, and so on). The window flashes a big card whenever a starter in your ESPN league scores or a matchup lead flips. Between alerts it sits as a nearly blank dark tile. There's no server: the Apple TV checks ESPN directly every 30 seconds, so it costs nothing.
+This app floats a Picture-in-Picture window over whatever you're watching on Apple TV (YouTube TV, ESPN, Peacock, and so on). The window flashes an alert whenever a starter in your ESPN league scores or a matchup lead flips: a quick burst with the point change and the player's photo, then a details screen with both teams' scores and the win chance. Between alerts it sits as a nearly blank dark tile. There's no server: the Apple TV checks ESPN directly every 10 seconds, so it costs nothing.
 
 ## 1. Get your league info
 
@@ -63,7 +63,11 @@ Before Sunday, turn on Demo mode and check that the window stays up over your st
 
 | Setting | Default | What it does |
 |---|---|---|
-| `pollSeconds` | 30 | How often ESPN is checked |
+| `pollSeconds` | 10 | How often live scores are checked (it backs off automatically if ESPN errors) |
+| `burstSeconds` / `leadBurstSeconds` | 1.0 / 2.5 | How long the burst holds for a point change / a lead change |
+| `detailSeconds` | 5.0 | How long the details screen stays up |
+| `pipSize` | 960x240 | Shape of the floating window (wider ratio = shorter window) |
+| `teamNicknames` | empty | Default short names for teams, by full team name |
 | `minimumPointChange` | 0.01 | Raise to around `1.0` if QB passing-yard ticks are too chatty |
 | `alertOnLeadChange` | true | Shows the orange "LEAD CHANGE" card |
 | `showScoreboardWhenIdle` | false | `true` shows the full league scoreboard between alerts |
@@ -71,10 +75,12 @@ Before Sunday, turn on Demo mode and check that the window stays up over your st
 
 ## How alerts behave
 
-- Each poll is compared with the previous one, player by player, across every starter in the league. Bench and IR players are ignored.
-- Within a poll, changes are grouped into **one card per team**, for example: "Gridiron Gurus +8.4 · J. Chase WR +6.0 · ...". If more scoring for a team arrives before its card has been shown, it merges into that card. This keeps 1 pm Sunday from turning into a ten-minute backlog.
-- Cards share the 30 seconds between polls. Each stays up for 2.5 to 7 seconds.
-- ESPN stat corrections show up as red, negative cards.
+- Each check is compared with the previous one, player by player, across every starter in the league. Bench and IR players are ignored.
+- Every player's point change is its own alert, and alerts play in order, one after another. During busy stretches the queue can fall behind the live action; raise `minimumPointChange` if so.
+- A lead change plays right after the alert that caused it. Going to or from a tie doesn't count.
+- ESPN stat corrections show up as red, negative alerts.
+- **Teams, nicknames & games** in the app picks which fantasy teams and NFL games alert, and sets a short nickname per team for the score rows.
+- **Demo mode** uses your real league's teams and starters with made-up scoring (or an invented league if `Secrets.swift` isn't filled in).
 
 ## Known limits
 
