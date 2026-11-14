@@ -77,6 +77,7 @@ Before Sunday, turn on Demo mode and check that the window stays up over your st
 
 - Each check is compared with the previous one, player by player, across every starter in the league. Bench and IR players are ignored.
 - Every player's point change is its own alert, and alerts play in order, one after another. **Minimum point change** in the app's Settings (default 0.5) skips tiny changes; they add up until they reach it. Raise it if the queue falls behind the live action.
+- The burst names the play under the point change (TOUCHDOWN · 18 YDS, RECEPTION · 12 YDS, INTERCEPTION, FIELD GOAL · 40–49 YDS, SACK…), worked out from the change in the player's ESPN stats since their last alert. If several things happened between checks, it shows the most important one, with combined catches and yards.
 - A lead change plays right after the alert that caused it. Going to or from a tie doesn't count.
 - ESPN stat corrections show up as red, negative alerts.
 - **Teams, nicknames & games** in the app picks which fantasy teams and NFL games alert, and sets a short nickname per team for the score rows.

@@ -33,7 +33,7 @@ final class ScoreTracker: ObservableObject {
     private var consecutiveFailures = 0
     /// Each player's points as of their last alert (key "teamId-playerId"). Changes are measured
     /// from here, so small gains below the threshold add up until together they reach it.
-    private var alertedPoints: [String: Double] = [:]
+    private var alertedPoints: [String: AlertBaseline] = [:]
     private var pollTask: Task<Void, Never>?
     private var alertTask: Task<Void, Never>?
 
@@ -174,7 +174,7 @@ final class ScoreTracker: ObservableObject {
         team.points += 6
         p.points += 6
         let before = m.winProbability(for: team.id)
-        queue.insert(ScoreEvent(kind: .scoring([PlayerChange(player: p, delta: 6)]),
+        queue.insert(ScoreEvent(kind: .scoring([PlayerChange(player: p, delta: 6, play: "TOUCHDOWN · 22 YDS")]),
                                 team: team, opponent: m.away,
                                 winProbability: before.map { min(0.99, $0 + 0.06) },
                                 previousWinProbability: before,
@@ -184,10 +184,16 @@ final class ScoreTracker: ObservableObject {
 
     // MARK: Diffing
 
-    /// `baseline` holds each player's points as of their last alert; a player alerts once their
-    /// points have moved by at least `threshold` from it, and the baseline then moves up.
+    /// A player's points and stat totals as of their last alert.
+    struct AlertBaseline {
+        var points: Double
+        var stats: [String: Double]
+    }
+
+    /// `baseline` holds each player's points (and stats) as of their last alert; a player alerts
+    /// once their points have moved by at least `threshold` from it, and the baseline then moves up.
     static func diff(old: LeagueSnapshot, new: LeagueSnapshot, filter: AlertFilter = AlertFilter(),
-                     threshold rawThreshold: Double, baseline: inout [String: Double]) -> [ScoreEvent] {
+                     threshold rawThreshold: Double, baseline: inout [String: AlertBaseline]) -> [ScoreEvent] {
         var oldById: [Int: MatchupScore] = [:]
         for m in old.matchups { oldById[m.id] = m }
         let threshold = max(rawThreshold, 0.01)
@@ -202,22 +208,27 @@ final class ScoreTracker: ObservableObject {
                 var before: [Int: Double] = [:]
                 for p in oldTeam.starters { before[p.id] = p.points }
 
+                var beforeStats: [Int: [String: Double]] = [:]
+                for p in oldTeam.starters { beforeStats[p.id] = p.stats }
+
                 var changes: [PlayerChange] = []
                 for p in team.starters {
                     let key = "\(team.id)-\(p.id)"
+                    let now = AlertBaseline(points: p.points, stats: p.stats)
                     guard let prev = before[p.id] else {           // lineup swap: no alert
-                        baseline[key] = p.points
+                        baseline[key] = now
                         continue
                     }
-                    let from = baseline[key] ?? prev
+                    let from = baseline[key] ?? AlertBaseline(points: prev, stats: beforeStats[p.id] ?? [:])
                     guard filter.allowsPlayer(p) else {
-                        baseline[key] = p.points                    // filtered out: don't save up
+                        baseline[key] = now                         // filtered out: don't save up
                         continue
                     }
-                    let d = (p.points - from).rounded(toPlaces: 2)
+                    let d = (p.points - from.points).rounded(toPlaces: 2)
                     if abs(d) >= threshold {
-                        changes.append(PlayerChange(player: p, delta: d))
-                        baseline[key] = p.points
+                        let play = PlayType.label(before: from.stats, after: p.stats, position: p.position)
+                        changes.append(PlayerChange(player: p, delta: d, play: play))
+                        baseline[key] = now
                     } else if baseline[key] == nil {
                         baseline[key] = from
                     }

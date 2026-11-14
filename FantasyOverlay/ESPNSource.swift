@@ -114,7 +114,8 @@ actor ESPNSource: ScoreSource {
             .map { e in
                 let player = e.playerPoolEntry?.player
                 // statSourceId 0 = actual stats, 1 = ESPN projection
-                let weekStat = player?.stats?.first { $0.scoringPeriodId == week && $0.statSourceId == 0 }?.appliedTotal
+                let actual = player?.stats?.first { $0.scoringPeriodId == week && $0.statSourceId == 0 }
+                let weekStat = actual?.appliedTotal
                 let projection = player?.stats?.first { $0.scoringPeriodId == week && $0.statSourceId == 1 }?.appliedTotal
                 let pts = weekStat ?? e.playerPoolEntry?.appliedStatTotal ?? 0
                 let position = ESPNPosition.name(player?.defaultPositionId)
@@ -129,7 +130,8 @@ actor ESPNSource: ScoreSource {
                     points: pts.rounded(toPlaces: 2),
                     projected: projection ?? 0,
                     proTeamId: proTeamId,
-                    headshotURL: photo
+                    headshotURL: photo,
+                    stats: actual?.stats ?? [:]
                 )
             }
 
@@ -228,6 +230,8 @@ struct ESPNLeague: Decodable {
         let scoringPeriodId: Int?
         let statSourceId: Int?
         let appliedTotal: Double?
+        /// Raw stat totals keyed by ESPN stat id ("42" = receiving yards, …).
+        let stats: [String: Double]?
     }
 }
 

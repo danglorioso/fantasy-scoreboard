@@ -11,6 +11,8 @@ struct PlayerScore: Identifiable, Hashable {
     var proTeamId: Int = 0
     /// ESPN headshot (or the NFL team's logo for a D/ST). nil = show a placeholder.
     var headshotURL: URL? = nil
+    /// This week's running stat totals, keyed by ESPN stat id (see PlayType).
+    var stats: [String: Double] = [:]
 
     var shortName: String {
         if position == "D/ST" { return name }
@@ -117,6 +119,59 @@ struct AlertFilter {
 struct PlayerChange: Hashable {
     var player: PlayerScore
     var delta: Double
+    /// What happened, e.g. "TOUCHDOWN · 18 YDS" or "RECEPTION · 12 YDS". nil if unknown.
+    var play: String? = nil
+}
+
+/// Works out what kind of play produced a point change by comparing a player's stat
+/// totals before and after. ESPN stat ids (from its fantasy API):
+///   3 pass yds · 4 pass TD · 20 INT thrown · 24 rush yds · 25 rush TD · 42 rec yds
+///   43 rec TD · 53 receptions · 72 fumbles lost · 19/26/44 two-point conversions
+///   74 FG 50+ · 77 FG 40–49 · 80 FG under 40 · 83 FG made · 86 extra point
+///   93 blocked kick TD · 95 INT · 96 fumble recovery · 98 safety · 99 sack
+///   101 kickoff return TD · 102 punt return TD · 103 fumble return TD · 104 INT return TD
+enum PlayType {
+    static func label(before: [String: Double], after: [String: Double], position: String) -> String? {
+        guard !after.isEmpty else { return nil }
+        func d(_ id: String) -> Double { (after[id] ?? 0) - (before[id] ?? 0) }
+        func n(_ id: String) -> Int { Int(d(id).rounded()) }
+        func yds(_ id: String) -> String { "\(Int(d(id).rounded())) YDS" }
+        func times(_ count: Int, _ one: String, _ many: String) -> String { count > 1 ? "\(count) \(many)" : one }
+
+        if position == "D/ST" {
+            if n("104") > 0 { return "PICK SIX" }
+            if n("103") > 0 { return "FUMBLE RETURN TD" }
+            if n("101") > 0 || n("102") > 0 { return "RETURN TD" }
+            if n("93") > 0 { return "BLOCKED KICK TD" }
+            if n("98") > 0 { return "SAFETY" }
+            if n("95") > 0 { return times(n("95"), "INTERCEPTION", "INTERCEPTIONS") }
+            if n("96") > 0 { return "FUMBLE RECOVERY" }
+            if n("99") > 0 { return times(n("99"), "SACK", "SACKS") }
+            return nil
+        }
+        if position == "K" {
+            if n("74") > 0 { return "FIELD GOAL · 50+ YDS" }
+            if n("77") > 0 { return "FIELD GOAL · 40–49 YDS" }
+            if n("83") > 0 || n("80") > 0 { return times(max(n("83"), n("80")), "FIELD GOAL", "FIELD GOALS") }
+            if n("86") > 0 { return times(n("86"), "EXTRA POINT", "EXTRA POINTS") }
+            return nil
+        }
+
+        if n("43") > 0 { return d("42") > 0 ? "TOUCHDOWN · \(yds("42"))" : "TOUCHDOWN" }
+        if n("25") > 0 { return d("24") > 0 ? "TOUCHDOWN · \(yds("24"))" : "TOUCHDOWN" }
+        if n("4") > 0 {
+            let label = times(n("4"), "TD PASS", "TD PASSES")
+            return d("3") > 0 ? "\(label) · \(yds("3"))" : label
+        }
+        if n("20") > 0 { return times(n("20"), "INTERCEPTION", "INTERCEPTIONS") }
+        if n("72") > 0 { return "FUMBLE LOST" }
+        if n("19") + n("26") + n("44") > 0 { return "2-PT CONVERSION" }
+        if n("53") > 0 { return "\(times(n("53"), "RECEPTION", "CATCHES")) · \(yds("42"))" }
+        if abs(d("24")) >= 1 { return "RUSH · \(yds("24"))" }
+        if abs(d("3")) >= 1 { return "PASSING · \(yds("3"))" }
+        if abs(d("42")) >= 1 { return "RECEIVING · \(yds("42"))" }
+        return nil
+    }
 }
 
 struct ScoreEvent: Identifiable {
