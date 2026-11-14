@@ -166,7 +166,7 @@ struct MatchupTile: View {
 /// Two-stage alert for a short, wide corner banner.
 ///
 /// Stage 1, burst: the point change, huge, on solid green/red with a soft glow, and the
-/// player's photo with their name under it. A lead change shows the team in a dark pill
+/// player's photo with their name under it. A lead change shows the team's name
 /// over a pulsing "LEAD CHANGE" on orange, and holds longer.
 ///
 /// Stage 2, details (slides in from the right as the burst slides out left):
@@ -267,19 +267,12 @@ struct AlertCard: View {
                 .scaleEffect(grow)
             } else {
                 VStack(spacing: 10 * k) {
-                    HStack(spacing: 14 * k) {
-                        Circle().fill(teamColor)
-                            .frame(width: 22 * k, height: 22 * k)
-                            .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 3 * k))
-                        Text(event.team.name)
-                            .font(.system(size: 44 * k, weight: .black, design: .rounded))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
-                    }
-                    .padding(.horizontal, 22 * k)
-                    .padding(.vertical, 8 * k)
-                    .background(Capsule().fill(Color(red: 0.047, green: 0.055, blue: 0.078).opacity(0.82)))
-                    .scaleEffect(grow)
+                    Text(event.team.name)
+                        .font(.system(size: 46 * k, weight: .black, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .shadow(color: .black.opacity(0.3), radius: 5 * k, y: 2 * k)
+                        .scaleEffect(grow)
 
                     Text("LEAD CHANGE")
                         .font(.system(size: 104 * k, weight: .black, design: .rounded))
