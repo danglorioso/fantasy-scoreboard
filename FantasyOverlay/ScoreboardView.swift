@@ -267,11 +267,15 @@ struct AlertCard: View {
                 .scaleEffect(grow)
             } else {
                 VStack(spacing: 10 * k) {
+                    // Team name on a darker-orange pill, so it stands apart from the headline.
                     Text(event.team.name)
                         .font(.system(size: 46 * k, weight: .black, design: .rounded))
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                        .shadow(color: .black.opacity(0.3), radius: 5 * k, y: 2 * k)
+                        .padding(.horizontal, 24 * k)
+                        .padding(.vertical, 6 * k)
+                        .background(Capsule().fill(Color(red: 150 / 255, green: 62 / 255, blue: 0).opacity(0.42)))
+                        .overlay(Capsule().stroke(Color.white.opacity(0.35), lineWidth: 2 * k))
                         .scaleEffect(grow)
 
                     Text("LEAD CHANGE")
