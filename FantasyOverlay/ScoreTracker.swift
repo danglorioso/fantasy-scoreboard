@@ -240,7 +240,12 @@ final class ScoreTracker: ObservableObject {
         recent.insert(event.tickerText, at: 0)
         recent = Array(recent.prefix(5))
 
-        try? await Task.sleep(for: .seconds(Config.alertSeconds(isLeadChange: event.isLeadChange)))
+        // Hold the alert until just before its fade-out. If another alert is already waiting,
+        // go straight to it (no fade, no idle tile in between); otherwise fade out and rest.
+        let full = Config.alertSeconds(isLeadChange: event.isLeadChange)
+        try? await Task.sleep(for: .seconds(full - Config.fadeOutSeconds))
+        if !queue.isEmpty { return }
+        try? await Task.sleep(for: .seconds(Config.fadeOutSeconds))
         currentEvent = nil
         try? await Task.sleep(for: .milliseconds(400))
     }
