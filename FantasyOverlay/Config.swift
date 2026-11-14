@@ -13,8 +13,23 @@ enum Config {
     static let swid = Secrets.swid
 
     // Polling
-    static let pollSeconds: Double = 30
+    /// How often live scores are checked. ESPN's own updates lag the play by 30–60 s, so
+    /// going much below 10 gains little and risks being throttled.
+    static let pollSeconds: Double = 10
     static let demoPollSeconds: Double = 6
+    /// League info (week, team names) barely changes, so it is refreshed less often.
+    static let metaRefreshSeconds: Double = 300
+    /// NFL game clocks (only used for projections and win %).
+    static let clockRefreshSeconds: Double = 30
+    /// Wait this long after a failed check, then after repeated failures.
+    static let backoffSeconds: [Double] = [30, 60]
+
+    /// Default short names for fantasy teams, shown on the score rows instead of ESPN's
+    /// abbreviation. Key = the full team name as it appears in ESPN. A nickname typed on
+    /// the Apple TV (Teams, nicknames & games) overrides the one here for that TV.
+    static let teamNicknames: [String: String] = [
+        // "Double Dan-ger": "DAN",
+    ]
 
     // Alerts
     /// Smallest per-player change that triggers an alert. 0.01 = "any point change".
@@ -26,10 +41,17 @@ enum Config {
     static let showScoreboardWhenIdle = false
     /// Stage 1: the quick, bright point-change burst.
     static let burstSeconds: Double = 1.0
+    /// A lead change holds its (pulsing) burst longer, because it matters more.
+    static let leadBurstSeconds: Double = 2.5
+    /// The slide from the burst to the details screen.
+    static let slideSeconds: Double = 0.45
     /// Stage 2: who scored, whose fantasy team, and where the matchup stands now.
     static let detailSeconds: Double = 5.0
-    /// Total time each alert is on screen (burst + transition + details + fade out).
-    static var alertSeconds: Double { burstSeconds + 0.35 + detailSeconds + 0.3 }
+    static let fadeOutSeconds: Double = 0.3
+    /// Total time one alert is on screen.
+    static func alertSeconds(isLeadChange: Bool) -> Double {
+        (isLeadChange ? leadBurstSeconds : burstSeconds) + slideSeconds + detailSeconds + fadeOutSeconds
+    }
 
     /// Pixel size of the PiP video. tvOS keeps the floating window at its normal width and
     /// sets the height from this shape, so a wider ratio = a shorter window covering less

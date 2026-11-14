@@ -15,7 +15,7 @@ struct ScoreboardView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.05, green: 0.06, blue: 0.09)
+            AlertCard.ground
             if let event {
                 AlertCard(event: event)   // static, fully settled (alerts normally animate via PiPController)
             } else if Config.showScoreboardWhenIdle {
@@ -98,23 +98,34 @@ struct ScoreboardView: View {
 
 /// A stable, distinct color per fantasy team, so you can tell at a glance whose player scored.
 enum TeamColors {
-    private static let palette: [Color] = [
-        Color(red: 0.16, green: 0.45, blue: 0.88),  // blue
-        Color(red: 0.82, green: 0.24, blue: 0.24),  // red
-        Color(red: 0.56, green: 0.30, blue: 0.82),  // purple
-        Color(red: 0.93, green: 0.52, blue: 0.10),  // orange
-        Color(red: 0.08, green: 0.60, blue: 0.56),  // teal
-        Color(red: 0.86, green: 0.30, blue: 0.62),  // pink
-        Color(red: 0.32, green: 0.58, blue: 0.20),  // green
-        Color(red: 0.74, green: 0.58, blue: 0.08),  // gold
-        Color(red: 0.36, green: 0.42, blue: 0.54),  // slate
-        Color(red: 0.62, green: 0.36, blue: 0.20),  // brown
-        Color(red: 0.20, green: 0.32, blue: 0.70),  // navy
-        Color(red: 0.66, green: 0.18, blue: 0.40),  // maroon
+    private static let palette: [(Double, Double, Double)] = [
+        (0.16, 0.45, 0.88),  // blue
+        (0.82, 0.24, 0.24),  // red
+        (0.56, 0.30, 0.82),  // purple
+        (0.93, 0.52, 0.10),  // orange
+        (0.08, 0.60, 0.56),  // teal
+        (0.86, 0.30, 0.62),  // pink
+        (0.32, 0.58, 0.20),  // green
+        (0.74, 0.58, 0.08),  // gold
+        (0.36, 0.42, 0.54),  // slate
+        (0.62, 0.36, 0.20),  // brown
+        (0.20, 0.32, 0.70),  // navy
+        (0.66, 0.18, 0.40),  // maroon
     ]
 
-    static func color(for teamId: Int) -> Color {
+    private static func rgb(_ teamId: Int) -> (Double, Double, Double) {
         palette[((teamId % palette.count) + palette.count) % palette.count]
+    }
+
+    static func color(for teamId: Int) -> Color {
+        let c = rgb(teamId)
+        return Color(red: c.0, green: c.1, blue: c.2)
+    }
+
+    /// A pale tint of the team color, readable as text on a dark background.
+    static func light(for teamId: Int) -> Color {
+        let c = rgb(teamId), w = 0.55
+        return Color(red: c.0 + (1 - c.0) * w, green: c.1 + (1 - c.1) * w, blue: c.2 + (1 - c.2) * w)
     }
 }
 
@@ -141,7 +152,7 @@ struct MatchupTile: View {
         let leading = matchup.leaderId == t.id
         return HStack(spacing: 6 * k) {
             Circle().fill(TeamColors.color(for: t.id)).frame(width: 10 * k, height: 10 * k)
-            Text(t.abbrev)
+            Text(t.label)
                 .font(.system(size: 22 * k, weight: leading ? .heavy : .semibold, design: .rounded))
                 .lineLimit(1)
             Spacer(minLength: 4 * k)
@@ -154,39 +165,38 @@ struct MatchupTile: View {
 
 /// Two-stage alert for a short, wide corner banner.
 ///
-/// Stage 1, burst (morph = 0): the point change, huge, on a bright green/red/orange field.
-/// Stage 2, details (morph = 1):
-///   ┌────────────────┬──────────────────────┬──────────────────────┐
-///   │ Double         │ J. Chase WR          │ ● GURU  98.2  p121.4 │
-///   │ Dan-ger        │ +6.0  → 18.4 pts     │ ● BLTZ  91.0  p117.0 │
-///   │ (team color)   │                      │ WIN 54% ▲6  ▓▓▓▓░░░  │
-///   └────────────────┴──────────────────────┴──────────────────────┘
+/// Stage 1, burst: the point change, huge, on solid green/red with a soft glow, and the
+/// player's photo with their name under it. A lead change shows the team in a dark pill
+/// over a pulsing "LEAD CHANGE" on orange, and holds longer.
 ///
-/// intro 0→1 pops the burst in; morph 0→1 swaps burst for details; settle 0→1 slides the
-/// win probability and projections from their old values to the new ones; exit 0→1 fades out.
+/// Stage 2, details (slides in from the right as the burst slides out left):
+///   ┌───────────────────┬──────────────────────────────┐
+///   │▌DAN         98.2  │ DOUBLE DAN-GER               │
+///   │                   │ J. Chase                     │
+///   │▌MOIZ        91.0  │ +6.0 → 18.4 pts              │
+///   │                   │ WIN 54% ▲6 ▓▓▓▓▓▓░░░░        │
+///   └───────────────────┴──────────────────────────────┘
+///
+/// intro 0→1 grows the burst in; pulse −1…1 throbs the lead-change burst; morph 0→1 is the
+/// slide; settle 0→1 moves the win % from its old value to the new one; exit 0→1 fades out.
 struct AlertCard: View {
     let event: ScoreEvent
     var intro: Double = 1
     var morph: Double = 1
     var settle: Double = 1
     var exit: Double = 0
+    var pulse: Double = 0
 
     static let green = Color(red: 0.20, green: 0.72, blue: 0.30)
     static let red = Color(red: 0.86, green: 0.22, blue: 0.22)
-    static let orange = Color(red: 0.95, green: 0.55, blue: 0.10)
     static let upGreen = Color(red: 0.45, green: 0.92, blue: 0.40)
     static let downRed = Color(red: 1.0, green: 0.42, blue: 0.42)
+    static let leadText = Color(red: 1.0, green: 0.70, blue: 0.28)
+    static let ground = Color(red: 0.043, green: 0.051, blue: 0.071)
 
     private var k: CGFloat { ScoreboardView.k }
     private var W: CGFloat { ScoreboardView.size.width }
     private var H: CGFloat { ScoreboardView.size.height }
-
-    private var accent: Color {
-        switch event.kind {
-        case .leadChange: return Self.orange
-        case .scoring: return event.totalDelta >= 0 ? Self.green : Self.red
-        }
-    }
 
     private var change: PlayerChange? {
         if case .scoring(let changes) = event.kind { return changes.first }
@@ -194,148 +204,205 @@ struct AlertCard: View {
     }
 
     private var teamColor: Color { TeamColors.color(for: event.team.id) }
+    private var flash: Double { event.isLeadChange ? max(0, pulse) : 0 }
 
     var body: some View {
-        let pop = ScoreboardView.easeOutBack(intro)
         let m = Self.easeInOut(morph)
 
         ZStack {
-            // Stage 2 background + details
-            Color(red: 0.06, green: 0.07, blue: 0.10)
-            details
-                .opacity(m)
-                .offset(y: (1 - m) * 30 * k)
-
-            // Stage 1: bright burst
-            ZStack {
-                accent
-                burstText
-                    .scaleEffect((0.3 + 0.7 * pop) * (1 - 0.35 * m))
-            }
-            .opacity(1 - m)
+            Self.ground
+            details.offset(x: (1 - m) * W)
+            burst.offset(x: -m * W)
         }
         .frame(width: W, height: H)
+        .clipped()
         .opacity(min(1, intro * 3) * (1 - exit))
         .foregroundColor(.white)
     }
 
-    // MARK: Stage 1
+    // MARK: Stage 1: burst
 
-    private var burstText: some View {
-        Group {
-            if let c = change {
-                Text(c.delta.signedString)
-                    .font(.system(size: 200 * k, weight: .black, design: .rounded).monospacedDigit())
-            } else {
-                Text("LEAD CHANGE")
-                    .font(.system(size: 130 * k, weight: .black, design: .rounded))
-            }
+    private var burstColor: Color {
+        if event.isLeadChange {
+            // Orange that flashes brighter with each pulse.
+            return Color(red: (242 + 13 * flash) / 255, green: (140 + 70 * flash) / 255, blue: (26 + 90 * flash) / 255)
         }
-        .lineLimit(1)
-        .minimumScaleFactor(0.4)
-        .frame(width: W - 20 * k, height: H)
-        .shadow(color: .black.opacity(0.25), radius: 6 * k, y: 3 * k)
+        return event.totalDelta >= 0 ? Self.green : Self.red
     }
 
-    // MARK: Stage 2
+    private var burst: some View {
+        let grow = 0.3 + 0.7 * ScoreboardView.easeOutBack(intro)
+        let throb = 1 + 0.06 * flash
+
+        return ZStack {
+            burstColor
+            // Soft glow behind the main text, and slightly darker edges.
+            EllipticalGradient(colors: [.white.opacity(0.34 + 0.2 * flash), .white.opacity(0)],
+                               center: UnitPoint(x: event.isLeadChange ? 0.5 : 0.32, y: 0.5),
+                               startRadiusFraction: 0, endRadiusFraction: event.isLeadChange ? 0.5 : 0.45)
+            EllipticalGradient(colors: [.black.opacity(0), .black.opacity(0.22)],
+                               center: .center, startRadiusFraction: 0.4, endRadiusFraction: 0.75)
+
+            if let c = change {
+                HStack(spacing: 0) {
+                    Text(c.delta.displaySigned)
+                        .font(.system(size: 170 * k, weight: .black, design: .rounded).monospacedDigit())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .shadow(color: .black.opacity(0.25), radius: 6 * k, y: 3 * k)
+                    Spacer(minLength: 16 * k)
+                    VStack(spacing: 6 * k) {
+                        headshot(for: c.player, size: 160 * k)
+                        Text(c.player.shortName)
+                            .font(.system(size: Self.nameSize(c.player.shortName) * k, weight: .black, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .shadow(color: .black.opacity(0.25), radius: 4 * k, y: 2 * k)
+                    }
+                    .frame(width: 160 * k)
+                }
+                // Left margin = 1/8 of the banner; the photo sits a little further in on the right.
+                .padding(.leading, W / 8)
+                .padding(.trailing, 172 * k)
+                .scaleEffect(grow)
+            } else {
+                VStack(spacing: 10 * k) {
+                    HStack(spacing: 14 * k) {
+                        Circle().fill(teamColor)
+                            .frame(width: 22 * k, height: 22 * k)
+                            .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 3 * k))
+                        Text(event.team.name)
+                            .font(.system(size: 44 * k, weight: .black, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                    }
+                    .padding(.horizontal, 22 * k)
+                    .padding(.vertical, 8 * k)
+                    .background(Capsule().fill(Color(red: 0.047, green: 0.055, blue: 0.078).opacity(0.82)))
+                    .scaleEffect(grow)
+
+                    Text("LEAD CHANGE")
+                        .font(.system(size: 104 * k, weight: .black, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .shadow(color: .black.opacity(0.25), radius: 6 * k, y: 3 * k)
+                        .scaleEffect(grow * throb)
+                }
+                .padding(.horizontal, 30 * k)
+            }
+        }
+        .frame(width: W, height: H)
+        .clipped()
+    }
+
+    /// Name under the photo: sized to span the photo's width (shorter names get bigger).
+    private static func nameSize(_ name: String) -> CGFloat {
+        min(38, 160 / max(1, CGFloat(name.count) * 0.58))
+    }
+
+    /// The player's ESPN photo in a white ring, or a silhouette until it has loaded.
+    private func headshot(for player: PlayerScore, size: CGFloat) -> some View {
+        ZStack {
+            Circle().fill(Color.black.opacity(0.22))
+            if let cg = HeadshotCache.shared.image(for: player.headshotURL) {
+                Image(decorative: cg, scale: 1)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+            } else {
+                Image(systemName: "person.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: size * 0.56, height: size * 0.56)
+                    .foregroundColor(.white.opacity(0.75))
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .overlay(Circle().stroke(Color.white, lineWidth: 6 * k))
+        .shadow(color: .black.opacity(0.3), radius: 6 * k, y: 4 * k)
+    }
+
+    // MARK: Stage 2: details
 
     private var details: some View {
         HStack(spacing: 0) {
-            // Whose fantasy team: a solid panel in that team's color.
-            Text(event.team.name)
-                .font(.system(size: 44 * k, weight: .heavy, design: .rounded))
-                .lineLimit(2)
-                .minimumScaleFactor(0.45)
-                .multilineTextAlignment(.leading)
-                .padding(.horizontal, 14 * k)
-                .frame(width: 270 * k, height: H, alignment: .leading)
-                .background(teamColor)
-
-            playerBlock
-                .padding(.horizontal, 14 * k)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-
-            VStack(alignment: .leading, spacing: 2 * k) {
-                teamRow(event.team, before: event.previousTeam, highlighted: true)
+            // Both teams as big score rows; the alert's team is highlighted.
+            VStack(spacing: 0) {
+                scoreRow(event.team, highlighted: true)
                 if let opp = event.opponent {
-                    teamRow(opp, before: event.previousOpponent, highlighted: false)
+                    scoreRow(opp, highlighted: false)
                 }
-                winProbability
             }
-            .padding(.horizontal, 6 * k)
-            .frame(width: 350 * k, height: H)
-            .background(Color.white.opacity(0.05))
+            .frame(width: 380 * k, height: H)
+
+            VStack(alignment: .leading, spacing: 4 * k) {
+                Text(event.team.name.uppercased())
+                    .font(.system(size: 22 * k, weight: .bold))
+                    .tracking(1.8 * k)
+                    .foregroundColor(TeamColors.light(for: event.team.id))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+
+                if let c = change {
+                    Text(c.player.shortName)
+                        .font(.system(size: 54 * k, weight: .black, design: .rounded))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                    HStack(alignment: .firstTextBaseline, spacing: 12 * k) {
+                        Text(c.delta.displaySigned)
+                            .font(.system(size: 46 * k, weight: .black, design: .rounded).monospacedDigit())
+                            .foregroundColor(c.delta >= 0 ? Self.upGreen : Self.downRed)
+                        Text("→ \(c.player.points.formatted1) pts")
+                            .font(.system(size: 30 * k, weight: .bold, design: .rounded).monospacedDigit())
+                            .opacity(0.75)
+                    }
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                } else {
+                    Text("LEADS")
+                        .font(.system(size: 54 * k, weight: .black, design: .rounded))
+                        .foregroundColor(Self.leadText)
+                        .lineLimit(1)
+                    if let opp = event.opponent {
+                        Text(opp.name)
+                            .font(.system(size: 32 * k, weight: .bold, design: .rounded))
+                            .opacity(0.9)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .frame(height: 46 * k)
+                    }
+                }
+
+                winProbability
+                    .padding(.top, 4 * k)
+            }
+            .padding(.leading, 32 * k)
+            .padding(.trailing, 28 * k)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
         .frame(width: W, height: H)
     }
 
-    @ViewBuilder private var playerBlock: some View {
-        if let c = change {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("\(c.player.shortName) \(c.player.position)")
-                    .font(.system(size: 52 * k, weight: .heavy, design: .rounded))
-                    .lineLimit(1).minimumScaleFactor(0.5)
-                HStack(alignment: .firstTextBaseline, spacing: 12 * k) {
-                    Text(c.delta.signedString)
-                        .font(.system(size: 50 * k, weight: .black, design: .rounded).monospacedDigit())
-                        .foregroundColor(c.delta >= 0 ? Self.upGreen : Self.downRed)
-                    Text("→ \(c.player.points.formatted1) pts")
-                        .font(.system(size: 34 * k, weight: .semibold, design: .rounded).monospacedDigit())
-                        .opacity(0.75)
-                }
-                .lineLimit(1).minimumScaleFactor(0.6)
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 4 * k) {
-                Text("TAKES THE LEAD")
-                    .font(.system(size: 38 * k, weight: .black, design: .rounded))
-                    .foregroundColor(Self.orange)
-                if let opp = event.opponent {
-                    Text("vs \(opp.name)")
-                        .font(.system(size: 26 * k, weight: .semibold))
-                        .opacity(0.75)
-                }
-            }
-            .lineLimit(1).minimumScaleFactor(0.5)
-        }
-    }
-
-    private func teamRow(_ t: TeamScore, before: TeamScore?, highlighted: Bool) -> some View {
-        let s = Self.easeInOut(settle)
-        let proj = t.projectedTotal.map { now in Self.lerp(before?.projectedTotal ?? now, now, s) }
-        let projDelta = (t.projectedTotal ?? 0) - (before?.projectedTotal ?? t.projectedTotal ?? 0)
-
-        return HStack(alignment: .center, spacing: 8 * k) {
-            Circle().fill(TeamColors.color(for: t.id))
-                .frame(width: 12 * k, height: 12 * k)
-            Text(t.abbrev)
-                .font(.system(size: 28 * k, weight: .heavy, design: .rounded))
-                .frame(width: 78 * k, alignment: .leading)
+    private func scoreRow(_ t: TeamScore, highlighted: Bool) -> some View {
+        let color = TeamColors.color(for: t.id)
+        return HStack(spacing: 0) {
+            Rectangle().fill(color).frame(width: 14 * k)
+            Text(t.label)
+                .font(.system(size: 44 * k, weight: .black, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.45)
+                .padding(.leading, 18 * k)
+            Spacer(minLength: 8 * k)
             Text(t.points.formatted1)
-                .font(.system(size: 36 * k, weight: .black, design: .rounded).monospacedDigit())
-            Spacer(minLength: 4 * k)
-            if let proj {
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text("proj \(proj.formatted1)")
-                        .font(.system(size: 18 * k, weight: .semibold).monospacedDigit())
-                        .opacity(0.75)
-                    if abs(projDelta) >= 0.05 {
-                        Text("\(projDelta >= 0 ? "▲" : "▼") \(abs(projDelta).formatted1)")
-                            .font(.system(size: 17 * k, weight: .bold).monospacedDigit())
-                            .foregroundColor(projDelta >= 0 ? Self.upGreen : Self.downRed)
-                            .opacity(s)
-                    }
-                }
-            }
+                .font(.system(size: 68 * k, weight: .black, design: .rounded).monospacedDigit())
+                .lineLimit(1)
+                .layoutPriority(1)
+                .padding(.trailing, 20 * k)
         }
-        .lineLimit(1).minimumScaleFactor(0.6)
-        .padding(.horizontal, 6 * k)
-        .padding(.vertical, 1 * k)
-        .background(
-            RoundedRectangle(cornerRadius: 8 * k)
-                .fill(highlighted ? TeamColors.color(for: t.id).opacity(0.28) : Color.clear)
-        )
-        .opacity(highlighted ? 1 : 0.85)
+        .foregroundColor(.white.opacity(highlighted ? 1 : 0.85))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(highlighted ? color.opacity(0.30) : Color.white.opacity(0.05))
     }
 
     @ViewBuilder private var winProbability: some View {
@@ -345,15 +412,15 @@ struct AlertCard: View {
             let shown = Self.lerp(before, now, s)
             let delta = Int(((now - before) * 100).rounded())
 
-            HStack(spacing: 8 * k) {
+            HStack(spacing: 12 * k) {
                 Text("WIN")
-                    .font(.system(size: 18 * k, weight: .bold))
-                    .opacity(0.7)
+                    .font(.system(size: 20 * k, weight: .bold))
+                    .opacity(0.75)
                 Text("\(Int((shown * 100).rounded()))%")
                     .font(.system(size: 30 * k, weight: .black, design: .rounded).monospacedDigit())
                 if delta != 0 {
                     Text("\(delta > 0 ? "▲" : "▼")\(abs(delta))")
-                        .font(.system(size: 22 * k, weight: .heavy).monospacedDigit())
+                        .font(.system(size: 22 * k, weight: .bold).monospacedDigit())
                         .foregroundColor(delta > 0 ? Self.upGreen : Self.downRed)
                         .opacity(s)
                 }
@@ -361,14 +428,14 @@ struct AlertCard: View {
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.white.opacity(0.18))
                         Capsule().fill(teamColor)
-                            .frame(width: max(10 * k, geo.size.width * min(1, max(0, shown))))
+                            .frame(width: max(14 * k, geo.size.width * min(1, max(0, shown))))
                     }
-                    .frame(height: 12 * k)
+                    .frame(height: 14 * k)
                     .frame(maxHeight: .infinity)
                 }
                 .frame(height: 30 * k)
             }
-            .padding(.horizontal, 6 * k)
+            .lineLimit(1)
         }
     }
 

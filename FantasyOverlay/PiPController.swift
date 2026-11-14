@@ -134,36 +134,51 @@ final class PiPController: NSObject, ObservableObject {
     }
 
     /// Every frame of one alert. Each entry is (image, how long to show it).
-    ///   burst:   pop in fast, hold the big point change for a moment
-    ///   morph:   swap the burst for the detail screen
-    ///   settle:  win % and projections slide from old values to new
+    ///   burst:   grow in fast, then hold the big point change (a lead change holds longer
+    ///            and pulses)
+    ///   slide:   burst slides out left as the details slide in from the right
+    ///   settle:  win % moves from its old value to the new one
     ///   details: hold (the longest part: most information to read)
     ///   exit:    fade out
     private func buildAlertTimeline(_ event: ScoreEvent) -> [(CGImage, Double)] {
         let dt = 1.0 / 30
         var frames: [(CGImage, Double)] = []
-        func add(intro: Double = 1, morph: Double = 1, settle: Double = 1, exit: Double = 0, _ duration: Double) {
-            let view = AlertCard(event: event, intro: intro, morph: morph, settle: settle, exit: exit)
+        func add(intro: Double = 1, morph: Double = 1, settle: Double = 1, exit: Double = 0,
+                 pulse: Double = 0, _ duration: Double) {
+            let view = AlertCard(event: event, intro: intro, morph: morph, settle: settle,
+                                 exit: exit, pulse: pulse)
                 .frame(width: ScoreboardView.size.width, height: ScoreboardView.size.height)
             if let img = render(view) { frames.append((img, duration)) }
         }
-        func steps(_ n: Int) -> [Double] { (1...n).map { Double($0) / Double(n) } }
+        func steps(_ n: Int) -> [Double] { (1...max(1, n)).map { Double($0) / Double(max(1, n)) } }
 
-        // Stage 1: burst (Config.burstSeconds total)
-        let introFrames = 7                                  // ~0.23 s pop
+        // Stage 1: burst
+        let introFrames = 7                                  // ~0.23 s grow-in
+        let introSeconds = Double(introFrames) * dt
         for t in steps(introFrames) { add(intro: t, morph: 0, settle: 0, dt) }
-        add(morph: 0, settle: 0, max(0.3, Config.burstSeconds - Double(introFrames) * dt))
+        if event.isLeadChange {
+            // Pulse ~1.6 times a second while it holds (drawn at 15 fps to keep this quick).
+            let hold = max(0.3, Config.leadBurstSeconds - introSeconds)
+            let step = 1.0 / 15
+            let count = max(1, Int((hold / step).rounded()))
+            for i in 0..<count {
+                let t = Double(i) * step
+                add(morph: 0, settle: 0, pulse: sin(t * 2 * .pi * 1.6), hold / Double(count))
+            }
+        } else {
+            add(morph: 0, settle: 0, max(0.3, Config.burstSeconds - introSeconds))
+        }
 
-        // Transition (0.35 s)
-        for t in steps(11) { add(morph: t, settle: 0, dt) }
+        // Slide to the details screen
+        for t in steps(Int((Config.slideSeconds / dt).rounded())) { add(morph: t, settle: 0, dt) }
 
-        // Stage 2: details (Config.detailSeconds total, starting with a 0.6 s settle)
+        // Stage 2: details (starting with a 0.6 s settle)
         let settleFrames = 18
         for t in steps(settleFrames) { add(settle: t, dt) }
         add(max(1.0, Config.detailSeconds - Double(settleFrames) * dt))
 
-        // Exit (0.3 s)
-        for t in steps(9) { add(exit: t, dt) }
+        // Fade out
+        for t in steps(Int((Config.fadeOutSeconds / dt).rounded())) { add(exit: t, dt) }
         return frames
     }
 
