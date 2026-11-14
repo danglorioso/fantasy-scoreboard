@@ -1,0 +1,350 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		03F510712BAE3C1E5BB13BCC /* ScoreboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E833FF04B1775F8A9EA588B /* ScoreboardView.swift */; };
+		33259F830F5ACD3CAB42A76C /* ESPNSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 137126B6EC196253B6CC7D03 /* ESPNSource.swift */; };
+		373FBF1930A7B24D007B9DAC /* PiPController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF1830A7B24D007B9DAC /* PiPController.swift */; };
+		373FBF1B30A7B260007B9DAC /* FantasyOverlayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF1A30A7B260007B9DAC /* FantasyOverlayApp.swift */; };
+		373FBF1D30A7B635007B9DAC /* Winprobability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF1C30A7B631007B9DAC /* Winprobability.swift */; };
+		373FBF1F30A7BBC1007B9DAC /* Selectionview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF1E30A7BBBE007B9DAC /* Selectionview.swift */; };
+		373FBF2230A7E18C007B9DAC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 373FBF2030A7DD58007B9DAC /* Assets.xcassets */; };
+		373FBF2830A80F1D007B9DAC /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF2730A80F1D007B9DAC /* Secrets.swift */; };
+		4E748CCD3FAF6CDC4C1E402A /* DemoSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14AF0F1AEBF03F88036EADFA /* DemoSource.swift */; };
+		8EB75B584318F5CF7F1649F9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D3848F068F65627D0D0D04 /* Models.swift */; };
+		DF50DFA426D7D9CC6D097BD9 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E11FDFE2C449AC03D36346E /* Config.swift */; };
+		FC2FFF880FFB470ECE55DA0F /* ScoreTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582371EF065C74D7859A66AC /* ScoreTracker.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		137126B6EC196253B6CC7D03 /* ESPNSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESPNSource.swift; sourceTree = "<group>"; };
+		14AF0F1AEBF03F88036EADFA /* DemoSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoSource.swift; sourceTree = "<group>"; };
+		22D3848F068F65627D0D0D04 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		373FBF1830A7B24D007B9DAC /* PiPController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiPController.swift; sourceTree = "<group>"; };
+		373FBF1A30A7B260007B9DAC /* FantasyOverlayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FantasyOverlayApp.swift; sourceTree = "<group>"; };
+		373FBF1C30A7B631007B9DAC /* Winprobability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Winprobability.swift; sourceTree = "<group>"; };
+		373FBF1E30A7BBBE007B9DAC /* Selectionview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectionview.swift; sourceTree = "<group>"; };
+		373FBF2030A7DD58007B9DAC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		373FBF2730A80F1D007B9DAC /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
+		582371EF065C74D7859A66AC /* ScoreTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreTracker.swift; sourceTree = "<group>"; };
+		5E833FF04B1775F8A9EA588B /* ScoreboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreboardView.swift; sourceTree = "<group>"; };
+		9E11FDFE2C449AC03D36346E /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
+		BEFB10928987F818938630EE /* FantasyOverlay.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FantasyOverlay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9D99E72E936DF6752F04F00 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		569BB407A7CD6C11FA9BF046 /* FantasyOverlay */ = {
+			isa = PBXGroup;
+			children = (
+				373FBF2730A80F1D007B9DAC /* Secrets.swift */,
+				9E11FDFE2C449AC03D36346E /* Config.swift */,
+				14AF0F1AEBF03F88036EADFA /* DemoSource.swift */,
+				373FBF1E30A7BBBE007B9DAC /* Selectionview.swift */,
+				137126B6EC196253B6CC7D03 /* ESPNSource.swift */,
+				373FBF1A30A7B260007B9DAC /* FantasyOverlayApp.swift */,
+				C9D99E72E936DF6752F04F00 /* Info.plist */,
+				22D3848F068F65627D0D0D04 /* Models.swift */,
+				373FBF1830A7B24D007B9DAC /* PiPController.swift */,
+				5E833FF04B1775F8A9EA588B /* ScoreboardView.swift */,
+				582371EF065C74D7859A66AC /* ScoreTracker.swift */,
+				373FBF1C30A7B631007B9DAC /* Winprobability.swift */,
+				373FBF2030A7DD58007B9DAC /* Assets.xcassets */,
+			);
+			path = FantasyOverlay;
+			sourceTree = "<group>";
+		};
+		78DFB4D001D69A8D3718D9A1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BEFB10928987F818938630EE /* FantasyOverlay.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7E515367AA2B8097F18067A1 = {
+			isa = PBXGroup;
+			children = (
+				569BB407A7CD6C11FA9BF046 /* FantasyOverlay */,
+				78DFB4D001D69A8D3718D9A1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1B71A6CA834BE5B5F4E55E11 /* FantasyOverlay */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3CE4F90FACE9B686C70F5016 /* Build configuration list for PBXNativeTarget "FantasyOverlay" */;
+			buildPhases = (
+				44AD2DC9DB46903DD7EFE4A7 /* Sources */,
+				373FBF2130A7E180007B9DAC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FantasyOverlay;
+			packageProductDependencies = (
+			);
+			productName = FantasyOverlay;
+			productReference = BEFB10928987F818938630EE /* FantasyOverlay.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0685EE327F79590D4831715A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					1B71A6CA834BE5B5F4E55E11 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 01A9CCB63385710BA11E915A /* Build configuration list for PBXProject "FantasyOverlay" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 7E515367AA2B8097F18067A1;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 78DFB4D001D69A8D3718D9A1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1B71A6CA834BE5B5F4E55E11 /* FantasyOverlay */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		373FBF2130A7E180007B9DAC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				373FBF2230A7E18C007B9DAC /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		44AD2DC9DB46903DD7EFE4A7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				373FBF1930A7B24D007B9DAC /* PiPController.swift in Sources */,
+				373FBF1B30A7B260007B9DAC /* FantasyOverlayApp.swift in Sources */,
+				DF50DFA426D7D9CC6D097BD9 /* Config.swift in Sources */,
+				373FBF1F30A7BBC1007B9DAC /* Selectionview.swift in Sources */,
+				4E748CCD3FAF6CDC4C1E402A /* DemoSource.swift in Sources */,
+				373FBF1D30A7B635007B9DAC /* Winprobability.swift in Sources */,
+				33259F830F5ACD3CAB42A76C /* ESPNSource.swift in Sources */,
+				8EB75B584318F5CF7F1649F9 /* Models.swift in Sources */,
+				FC2FFF880FFB470ECE55DA0F /* ScoreTracker.swift in Sources */,
+				03F510712BAE3C1E5BB13BCC /* ScoreboardView.swift in Sources */,
+				373FBF2830A80F1D007B9DAC /* Secrets.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		11192C694A29AB40D5A827BF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = U8AK9PG243;
+				INFOPLIST_FILE = FantasyOverlay/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.danglorioso.fantasyscoreboard;
+				SDKROOT = appletvos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+			};
+			name = Debug;
+		};
+		699541E776FC399F6ED9011C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TVOS_DEPLOYMENT_TARGET = 17.0;
+			};
+			name = Debug;
+		};
+		BB8542B2D6D782CF3A3D33CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = U8AK9PG243;
+				INFOPLIST_FILE = FantasyOverlay/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.danglorioso.fantasyscoreboard;
+				SDKROOT = appletvos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 3;
+			};
+			name = Release;
+		};
+		CA04647401690BAC68EB00CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = appletvos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TVOS_DEPLOYMENT_TARGET = 17.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		01A9CCB63385710BA11E915A /* Build configuration list for PBXProject "FantasyOverlay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				699541E776FC399F6ED9011C /* Debug */,
+				CA04647401690BAC68EB00CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3CE4F90FACE9B686C70F5016 /* Build configuration list for PBXNativeTarget "FantasyOverlay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				11192C694A29AB40D5A827BF /* Debug */,
+				BB8542B2D6D782CF3A3D33CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0685EE327F79590D4831715A /* Project object */;
+}
