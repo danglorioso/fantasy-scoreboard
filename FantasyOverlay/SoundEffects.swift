@@ -35,13 +35,20 @@ final class SoundEffects {
 
     // MARK: Synthesis
 
-    /// An air horn: "BWAAP — BWAAP — BWAAAAAAP". Several slightly detuned brassy tones,
-    /// pushed into soft distortion, with a small pitch sag at the end of each blast.
+    /// The meme air horn: a rapid-fire burst of short blasts, then one long one
+    /// ("BRAP-BRAP-BRAP-BRAP-BRAP-BRAAAAAP"). A high, slightly detuned chord pushed into
+    /// distortion, with a small pitch sag at the end of each blast.
     private func makeBuffer(_ kind: Kind) -> AVAudioPCMBuffer {
-        // (start s, length s)
-        let blasts: [(Double, Double)] = [(0, 0.2), (0.27, 0.2), (0.54, 0.95)]
-        // (base frequency Hz, loudness) — a stacked chord gives the classic horn sound.
-        let voices: [(Double, Double)] = [(233.1, 1.0), (235.2, 0.8), (349.2, 0.7), (466.2, 0.45)]
+        // (start s, length s): one opener, four quick stabs, then the long blast.
+        var blasts: [(Double, Double)] = [(0, 0.16)]
+        var t = 0.21
+        for _ in 0..<4 {
+            blasts.append((t, 0.085))
+            t += 0.125
+        }
+        blasts.append((t + 0.03, 0.7))
+        // (base frequency Hz, loudness): around B4 with a fifth and octave on top.
+        let voices: [(Double, Double)] = [(466.2, 1.0), (470.0, 0.85), (698.5, 0.6), (932.3, 0.45), (936.5, 0.3)]
         let total = (blasts.map { $0.0 + $0.1 }.max() ?? 1) + 0.05
         let frames = AVAudioFrameCount(total * sampleRate)
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames)!
@@ -57,22 +64,22 @@ final class SoundEffects {
                 continue
             }
             let u = t - start
-            let attack = min(1, u / 0.012)
-            let release = min(1, (length - u) / 0.05)
+            let attack = min(1, u / 0.006)
+            let release = min(1, (length - u) / 0.025)
             let envelope = attack * release
             // A slight scoop up at the start and sag at the end, like a real horn.
-            let bend = 1 - 0.03 * exp(-u / 0.03) - 0.04 * max(0, (u - (length - 0.12)) / 0.12)
+            let bend = 1 - 0.025 * exp(-u / 0.02) - 0.035 * max(0, (u - (length - 0.1)) / 0.1)
 
             var sample = 0.0
             for (v, (freq, loud)) in voices.enumerated() {
                 phases[v] += 2 * .pi * freq * bend / sampleRate
                 // Band-limited sawtooth: the buzzy, brassy part.
                 var saw = 0.0
-                for h in 1...10 { saw += sin(Double(h) * phases[v]) / Double(h) }
+                for h in 1...7 { saw += sin(Double(h) * phases[v]) / Double(h) }
                 sample += loud * saw
             }
             // Soft distortion gives the blare; then scale to a safe level.
-            let value = tanh(sample * 0.9) * 0.55 * envelope
+            let value = tanh(sample * 1.3) * 0.55 * envelope
             left[i] = Float(value)
             right[i] = Float(value)
         }
