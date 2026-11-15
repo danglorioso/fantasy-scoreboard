@@ -192,6 +192,7 @@ struct AlertCard: View {
     static let upGreen = Color(red: 0.45, green: 0.92, blue: 0.40)
     static let downRed = Color(red: 1.0, green: 0.42, blue: 0.42)
     static let leadText = Color(red: 1.0, green: 0.70, blue: 0.28)
+    static let gold = Color(red: 0.96, green: 0.72, blue: 0.24)
     static let ground = Color(red: 0.043, green: 0.051, blue: 0.071)
 
     private var k: CGFloat { ScoreboardView.k }
@@ -399,6 +400,16 @@ struct AlertCard: View {
             .padding(.leading, 32 * k)
             .padding(.trailing, 28 * k)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .background {
+                // Lead change: a warm gold wash and a gold underline so it stands out.
+                if event.isLeadChange {
+                    ZStack(alignment: .bottom) {
+                        LinearGradient(colors: [Self.gold.opacity(0.30), Self.gold.opacity(0.10)],
+                                       startPoint: .leading, endPoint: .trailing)
+                        Rectangle().fill(Self.gold).frame(height: 6 * k)
+                    }
+                }
+            }
         }
         .frame(width: W, height: H)
     }
