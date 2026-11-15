@@ -15,6 +15,7 @@
 		373FBF1F30A7BBC1007B9DAC /* Selectionview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF1E30A7BBBE007B9DAC /* Selectionview.swift */; };
 		373FBF4130A90001007B9DAC /* SoundEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF4030A90001007B9DAC /* SoundEffects.swift */; };
 		373FBF2230A7E18C007B9DAC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 373FBF2030A7DD58007B9DAC /* Assets.xcassets */; };
+		373FBF4330A90002007B9DAC /* LeadChangeAirHorn.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 373FBF4230A90002007B9DAC /* LeadChangeAirHorn.m4a */; };
 		373FBF2830A80F1D007B9DAC /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF2730A80F1D007B9DAC /* Secrets.swift */; };
 		4E748CCD3FAF6CDC4C1E402A /* DemoSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14AF0F1AEBF03F88036EADFA /* DemoSource.swift */; };
 		8EB75B584318F5CF7F1649F9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D3848F068F65627D0D0D04 /* Models.swift */; };
@@ -32,6 +33,7 @@
 		373FBF1E30A7BBBE007B9DAC /* Selectionview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectionview.swift; sourceTree = "<group>"; };
 		373FBF4030A90001007B9DAC /* SoundEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEffects.swift; sourceTree = "<group>"; };
 		373FBF2030A7DD58007B9DAC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		373FBF4230A90002007B9DAC /* LeadChangeAirHorn.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = LeadChangeAirHorn.m4a; sourceTree = "<group>"; };
 		373FBF2730A80F1D007B9DAC /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
 		582371EF065C74D7859A66AC /* ScoreTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreTracker.swift; sourceTree = "<group>"; };
 		5E833FF04B1775F8A9EA588B /* ScoreboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreboardView.swift; sourceTree = "<group>"; };
@@ -58,6 +60,7 @@
 				582371EF065C74D7859A66AC /* ScoreTracker.swift */,
 				373FBF1C30A7B631007B9DAC /* Winprobability.swift */,
 				373FBF2030A7DD58007B9DAC /* Assets.xcassets */,
+				373FBF4230A90002007B9DAC /* LeadChangeAirHorn.m4a */,
 			);
 			path = FantasyOverlay;
 			sourceTree = "<group>";
@@ -138,6 +141,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				373FBF2230A7E18C007B9DAC /* Assets.xcassets in Resources */,
+				373FBF4330A90002007B9DAC /* LeadChangeAirHorn.m4a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

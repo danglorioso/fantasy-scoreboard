@@ -1,6 +1,7 @@
 import AVFoundation
 
-/// The lead-change air horn, synthesized in code (no audio file). It plays mixed with whatever
+/// The lead-change air horn: a bundled clip (LeadChangeAirHorn.m4a), with a synthesized horn
+/// as a backup. It plays mixed with whatever
 /// you're watching, so the game's audio keeps going underneath. Only lead changes make a sound.
 @MainActor
 final class SoundEffects {
@@ -15,9 +16,28 @@ final class SoundEffects {
     private var buffers: [Kind: AVAudioPCMBuffer] = [:]
     private var attached = false
 
-    /// Plays `kind` at `volume` (0 = off, 1 = full).
+    /// The air horn clip bundled with the app (LeadChangeAirHorn.m4a).
+    private lazy var clip: AVAudioPlayer? = {
+        guard let url = Bundle.main.url(forResource: "LeadChangeAirHorn", withExtension: "m4a"),
+              let player = try? AVAudioPlayer(contentsOf: url) else { return nil }
+        player.prepareToPlay()
+        return player
+    }()
+
+    /// Plays `kind` at `volume` (0 = off, 1 = full). Uses the bundled clip, or a synthesized
+    /// horn if the clip can't be loaded.
     func play(_ kind: Kind, volume: Double) {
         guard volume > 0 else { return }
+        if let clip {
+            clip.volume = Float(volume)
+            clip.currentTime = 0
+            clip.play()
+            return
+        }
+        playSynthesized(kind, volume: volume)
+    }
+
+    private func playSynthesized(_ kind: Kind, volume: Double) {
         if !attached {
             engine.attach(node)
             engine.connect(node, to: engine.mainMixerNode, format: format)
@@ -33,7 +53,7 @@ final class SoundEffects {
         if !node.isPlaying { node.play() }
     }
 
-    // MARK: Synthesis
+    // MARK: Synthesized backup
 
     /// The meme air horn: a rapid-fire burst of short blasts, then one long one
     /// ("BRAP-BRAP-BRAP-BRAP-BRAP-BRAAAAAP"). A high, slightly detuned chord pushed into
