@@ -41,7 +41,11 @@ enum Config {
     static let alertOnLeadChange = true
     /// false = PiP sits as a nearly blank dark tile between alerts (popup feel).
     /// true  = PiP shows the full league scoreboard between alerts.
-    static let showScoreboardWhenIdle = false
+    static let showScoreboardWhenIdle = false   // (old 3x2 grid; superseded by matchup columns)
+    /// Between alerts: one column per matchup with scores and win chance. More matchups than
+    /// this are shown in pages that rotate every `idlePageSeconds`.
+    static let idleColumns = 4
+    static let idlePageSeconds: Double = 8
     /// Stage 1: the quick, bright point-change burst.
     static let burstSeconds: Double = 2.5
     /// A lead change holds its (pulsing) burst longer, because it matters more.

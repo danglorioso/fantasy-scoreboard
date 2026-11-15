@@ -1,6 +1,6 @@
 # Fantasy Overlay (tvOS)
 
-This app floats a Picture-in-Picture window over whatever you're watching on Apple TV (YouTube TV, ESPN, Peacock, and so on). The window flashes an alert whenever a starter in your ESPN league scores or a matchup lead flips: a quick burst with the point change and the player's photo, then a details screen with both teams' scores and the win chance. Between alerts it sits as a nearly blank dark tile. There's no server: the Apple TV checks ESPN directly every 10 seconds, so it costs nothing.
+This app floats a Picture-in-Picture window over whatever you're watching on Apple TV (YouTube TV, ESPN, Peacock, and so on). The window flashes an alert whenever a starter in your ESPN league scores or a matchup lead flips: a quick burst with the point change and the player's photo, then a details screen with both teams' scores and the win chance. Between alerts it shows every matchup side by side (scores and win chance), updating as the numbers change. There's no server: the Apple TV checks ESPN directly every 10 seconds, so it costs nothing.
 
 ## 1. Get your league info
 
@@ -70,7 +70,7 @@ Before Sunday, turn on Demo mode and check that the window stays up over your st
 | `teamNicknames` | empty | Default short names for teams, by full team name |
 | `minimumPointChange` | 0.01 | Raise to around `1.0` if QB passing-yard ticks are too chatty |
 | `alertOnLeadChange` | true | Shows the orange "LEAD CHANGE" card |
-| `showScoreboardWhenIdle` | false | `true` shows the full league scoreboard between alerts |
+| `idleColumns` / `idlePageSeconds` | 4 / 8 | Matchups shown at once between alerts; more rotate in pages |
 | `mixWithOtherAudio` | true | Flip this if PiP closes when the game's audio starts |
 
 ## How alerts behave
