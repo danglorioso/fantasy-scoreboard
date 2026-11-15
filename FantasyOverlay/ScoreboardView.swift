@@ -12,14 +12,16 @@ struct ScoreboardView: View {
     let event: ScoreEvent?
     let ticker: String?
     let status: String
+    /// Which page of matchup columns to show when idle (for leagues with more than 4 matchups).
+    var idlePage: Int = 0
 
     var body: some View {
         ZStack {
             AlertCard.ground
             if let event {
                 AlertCard(event: event)   // static, fully settled (alerts normally animate via PiPController)
-            } else if Config.showScoreboardWhenIdle {
-                board
+            } else if let matchups = snapshot?.matchups, !matchups.isEmpty {
+                MatchupColumns(matchups: Self.page(of: matchups, idlePage))
             } else {
                 quietIdle
             }
@@ -27,6 +29,18 @@ struct ScoreboardView: View {
         .frame(width: Self.size.width, height: Self.size.height)
         .clipped()
         .environment(\.colorScheme, .dark)
+    }
+
+    /// The matchups shown on one idle page.
+    static func page(of matchups: [MatchupScore], _ index: Int) -> [MatchupScore] {
+        let per = max(1, Config.idleColumns)
+        let pages = max(1, Int((Double(matchups.count) / Double(per)).rounded(.up)))
+        let start = (((index % pages) + pages) % pages) * per
+        return Array(matchups[start..<min(start + per, matchups.count)])
+    }
+
+    static func pageCount(_ matchups: [MatchupScore]) -> Int {
+        max(1, Int((Double(matchups.count) / Double(max(1, Config.idleColumns))).rounded(.up)))
     }
 
     /// Slides in, overshoots slightly, settles.
@@ -126,6 +140,90 @@ enum TeamColors {
     static func light(for teamId: Int) -> Color {
         let c = rgb(teamId), w = 0.55
         return Color(red: c.0 + (1 - c.0) * w, green: c.1 + (1 - c.1) * w, blue: c.2 + (1 - c.2) * w)
+    }
+}
+
+/// Between alerts: one column per matchup. Each column has both teams (color bar, nickname,
+/// score; the trailing team dimmed) with a two-color win-chance bar between them.
+struct MatchupColumns: View {
+    let matchups: [MatchupScore]
+    private var k: CGFloat { ScoreboardView.k }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(matchups.enumerated()), id: \.element.id) { i, m in
+                column(m)
+                if i < matchups.count - 1 {
+                    Rectangle().fill(Color.white.opacity(0.08)).frame(width: 1)
+                }
+            }
+        }
+        .frame(width: ScoreboardView.size.width, height: ScoreboardView.size.height)
+        .foregroundColor(.white)
+    }
+
+    private func column(_ m: MatchupScore) -> some View {
+        let a = m.home
+        let pa = m.homeWinProbability
+        return VStack(spacing: 0) {
+            row(a, leading: m.away.map { a.points >= $0.points } ?? true)
+            if let b = m.away {
+                HStack(spacing: 6 * k) {
+                    pct(pa)
+                    GeometryReader { geo in
+                        HStack(spacing: 0) {
+                            if let pa {
+                                Rectangle().fill(TeamColors.color(for: a.id))
+                                    .frame(width: geo.size.width * min(1, max(0, pa)))
+                                Rectangle().fill(TeamColors.color(for: b.id))
+                            } else {
+                                Rectangle().fill(Color.white.opacity(0.12))
+                            }
+                        }
+                        .frame(height: 10 * k)
+                        .clipShape(Capsule())
+                        .frame(maxHeight: .infinity)
+                    }
+                    pct(pa.map { 1 - $0 })
+                }
+                .frame(height: 34 * k)
+                row(b, leading: b.points > a.points)
+            } else {
+                Text("BYE")
+                    .font(.system(size: 22 * k, weight: .bold))
+                    .opacity(0.5)
+                    .frame(height: 96 * k)
+            }
+        }
+        .padding(.horizontal, 16 * k)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func row(_ t: TeamScore, leading: Bool) -> some View {
+        HStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 4 * k)
+                .fill(TeamColors.color(for: t.id))
+                .frame(width: 8 * k)
+            Text(t.label)
+                .font(.system(size: 28 * k, weight: .black, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .padding(.leading, 10 * k)
+            Spacer(minLength: 6 * k)
+            Text(t.points.formatted1)
+                .font(.system(size: 36 * k, weight: .black, design: .rounded).monospacedDigit())
+                .lineLimit(1)
+                .layoutPriority(1)
+        }
+        .frame(height: 62 * k)
+        .opacity(leading ? 1 : 0.72)
+    }
+
+    private func pct(_ p: Double?) -> some View {
+        Text(p.map { "\(Int(($0 * 100).rounded()))%" } ?? "–")
+            .font(.system(size: 16 * k, weight: .bold).monospacedDigit())
+            .opacity(0.85)
+            .frame(width: 40 * k)
     }
 }
 
