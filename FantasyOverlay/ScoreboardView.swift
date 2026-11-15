@@ -264,7 +264,7 @@ struct AlertCard: View {
                                 .minimumScaleFactor(0.6)
                                 .padding(.horizontal, 16 * k)
                                 .padding(.vertical, 7 * k)
-                                .background(Capsule().fill(Color.black.opacity(0.2)))
+                                .background(Capsule().fill(Color.black.opacity(0.36)))
                         }
                     }
                     // Lift the pair a little so the label sits midway between the number and the
