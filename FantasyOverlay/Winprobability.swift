@@ -1,6 +1,7 @@
 import Foundation
 
-/// Rough live win probability for a fantasy matchup.
+/// Rough live win probability for a fantasy matchup. Only used when ESPN doesn't send its
+/// own (ESPN's `winProbability` is preferred), e.g. in the invented demo league.
 ///
 /// Expected final = points so far + (projection × share of that player's NFL game left).
 /// Uncertainty grows with how much of each player's game is left. The gap between the
@@ -35,8 +36,9 @@ enum WinProbability {
             let left = min(1, max(0, remaining(p.proTeamId)))
             let proj = max(p.projected, 0)
             mean += p.points + proj * left
-            // A player's full-game score typically swings by ~60% of their projection.
-            let sd = 0.6 * max(proj, 3) * left.squareRoot()
+            // Fallback only (the app uses ESPN's own win probability when it has one).
+            // Tuned so this estimate lands close to ESPN's numbers.
+            let sd = 1.1 * max(proj, 3) * left.squareRoot()
             variance += sd * sd
         }
         return (mean, variance)

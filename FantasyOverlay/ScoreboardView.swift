@@ -169,7 +169,7 @@ struct MatchupColumns: View {
             row(a, leading: m.away.map { a.points >= $0.points } ?? true)
             if let b = m.away {
                 HStack(spacing: 6 * k) {
-                    pct(pa)
+                    pct(pa.map { Double(Self.percent($0)) / 100 })
                     GeometryReader { geo in
                         HStack(spacing: 0) {
                             if let pa {
@@ -184,7 +184,7 @@ struct MatchupColumns: View {
                         .clipShape(Capsule())
                         .frame(maxHeight: .infinity)
                     }
-                    pct(pa.map { 1 - $0 })
+                    pct(pa.map { Double(100 - Self.percent($0)) / 100 })   // the two sides always add to 100
                 }
                 .frame(height: 34 * k)
                 row(b, leading: b.points > a.points)
@@ -218,6 +218,8 @@ struct MatchupColumns: View {
         .frame(height: 62 * k)
         .opacity(leading ? 1 : 0.72)
     }
+
+    private static func percent(_ p: Double) -> Int { Int((min(1, max(0, p)) * 100).rounded()) }
 
     private func pct(_ p: Double?) -> some View {
         Text(p.map { "\(Int(($0 * 100).rounded()))%" } ?? "–")

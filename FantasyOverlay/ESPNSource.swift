@@ -86,7 +86,8 @@ actor ESPNSource: ScoreSource {
         }
 
         // 3) Live box scores for this week (starters' fantasy points + projections)
-        let live = try await get(views: ["mMatchupScore", "mBoxscore"], scoringPeriod: meta.week)
+        let live = try await get(views: ["mMatchupScore", "mBoxscore", "mScoreboard", "mLiveScoring"],
+                                 scoringPeriod: meta.week)
 
         let matchups: [MatchupScore] = (live.schedule ?? [])
             .filter { $0.matchupPeriodId == meta.matchupPeriod }
@@ -101,10 +102,21 @@ actor ESPNSource: ScoreSource {
                     // Teams not on the scoreboard (bye) have nothing left to play.
                     WinProbability.annotate(&matchup) { clock[$0] ?? 0 }
                 }
+                // Prefer ESPN's own win probability; our estimate is only a fallback.
+                if let espn = Self.normalized(home.winProbability)
+                    ?? Self.normalized(m.away?.winProbability).map({ 1 - $0 }) {
+                    matchup.homeWinProbability = espn
+                }
                 return matchup
             }
 
         return LeagueSnapshot(week: meta.week, matchups: matchups, games: games)
+    }
+
+    /// ESPN sends 0–1 here; accept 0–100 too, just in case.
+    private static func normalized(_ p: Double?) -> Double? {
+        guard let p, p >= 0 else { return nil }
+        return p > 1 ? min(1, p / 100) : p
     }
 
     private func teamScore(_ side: ESPNLeague.Side, _ teams: [Int: ESPNLeague.Team], _ week: Int) -> TeamScore {
@@ -204,6 +216,8 @@ struct ESPNLeague: Decodable {
         let totalPoints: Double?
         let totalPointsLive: Double?
         let rosterForCurrentScoringPeriod: Roster?
+        /// ESPN's own live win probability for this side (0–1), as its app shows it.
+        let winProbability: Double?
     }
 
     struct Roster: Decodable { let entries: [Entry]? }
