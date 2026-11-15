@@ -38,7 +38,13 @@ enum Config {
     /// Choices offered in the app's setting.
     static let pointChangeOptions: [Double] = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,
                                                 1, 1.5, 2, 2.5, 3, 4, 5, 6]
+    /// "Lead change" alerts fire when the favorite flips (ESPN's win probability crosses 50%),
+    /// not when the live score leader changes.
     static let alertOnLeadChange = true
+    /// Sound effect volume when nothing has been chosen on the Apple TV yet (0 = off, 1 = full).
+    static let defaultSoundVolume: Double = 0.6
+    /// Choices for the app's "Alert delay" setting (seconds), to line alerts up with your stream.
+    static let alertDelayOptions: [Double] = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 75, 90, 105, 120]
     /// false = PiP sits as a nearly blank dark tile between alerts (popup feel).
     /// true  = PiP shows the full league scoreboard between alerts.
     static let showScoreboardWhenIdle = false   // (old 3x2 grid; superseded by matchup columns)

@@ -181,6 +181,8 @@ struct ScoreEvent: Identifiable {
     }
 
     let id = UUID()
+    /// Earliest time this alert may appear (detection time + the alert delay).
+    var readyAt: Date = .distantPast
     var kind: Kind
     var team: TeamScore
     var opponent: TeamScore?
