@@ -51,23 +51,17 @@ struct SelectionView: View {
             }
 
             Section {
-                Picker("Sound effects", selection: $tracker.soundVolume) {
+                Picker("Lead change sound", selection: $tracker.soundVolume) {
                     Text("Off").tag(0.0)
                     Text("Low").tag(0.3)
                     Text("Medium").tag(0.6)
                     Text("High").tag(1.0)
                 }
-                Button("Preview sounds") {
-                    let v = tracker.soundVolume
-                    let kinds: [SoundEffects.Kind] = [.gain, .bigGain, .loss, .leadChange]
-                    for (i, kind) in kinds.enumerated() {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 1.3) {
-                            SoundEffects.shared.play(kind, volume: v)
-                        }
-                    }
+                Button("Preview sound") {
+                    SoundEffects.shared.play(.leadChange, volume: tracker.soundVolume)
                 }
             } footer: {
-                Text("A chime for points up, a bigger one for touchdowns, a low tone for points down, and a fanfare for lead changes. They play over your stream's audio.")
+                Text("A short fanfare when the favorite in a matchup flips. Other alerts are silent. It plays over your stream's audio.")
             }
 
             Section {

@@ -79,7 +79,7 @@ Before Sunday, turn on Demo mode and check that the window stays up over your st
 - Every player's point change is its own alert, and alerts play in order, one after another. **Minimum point change** in the app's Settings (default 0.5) skips tiny changes; they add up until they reach it. Raise it if the queue falls behind the live action.
 - The burst names the play under the point change (TOUCHDOWN · 18 YDS, RECEPTION · 12 YDS, INTERCEPTION, FIELD GOAL · 40–49 YDS, SACK…), worked out from the change in the player's ESPN stats since their last alert. If several things happened between checks, it shows the most important one, with combined catches and yards.
 - A lead change means the favorite flipped: ESPN's win probability crossed 50%. A team passing the other on live points alone doesn't trigger one.
-- **Sound effects** in Settings (Off / Low / Medium / High): a chime for points up, a bigger one for touchdowns, a low tone for points down and a fanfare for lead changes, mixed over the stream's audio.
+- **Lead change sound** in Settings (Off / Low / Medium / High): a short fanfare for lead changes only, mixed over the stream's audio. Other alerts are silent.
 - **Alert delay** in Settings holds alerts (and the between-alerts scores) back so they line up with a stream that runs behind live TV.
 - ESPN stat corrections show up as red, negative alerts.
 - **Teams, nicknames & games** in the app picks which fantasy teams and NFL games alert, and sets a short nickname per team for the score rows.

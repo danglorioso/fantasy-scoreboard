@@ -120,12 +120,13 @@ final class PiPController: NSObject, ObservableObject {
                 FrameStore.shared.addTimeline(start: start, frames: frames,
                                               fadeSeconds: Config.fadeOutSeconds)
 
-                // Play the sound when the burst actually appears in the window.
-                let wait = max(0, start - player.currentTime().seconds)
-                let kind = SoundEffects.Kind(for: event)
-                let volume = tracker.soundVolume
-                DispatchQueue.main.asyncAfter(deadline: .now() + wait) {
-                    SoundEffects.shared.play(kind, volume: volume)
+                // Lead changes get a fanfare, timed to when the burst appears in the window.
+                if event.isLeadChange {
+                    let wait = max(0, start - player.currentTime().seconds)
+                    let volume = tracker.soundVolume
+                    DispatchQueue.main.asyncAfter(deadline: .now() + wait) {
+                        SoundEffects.shared.play(.leadChange, volume: volume)
+                    }
                 }
             }
         }

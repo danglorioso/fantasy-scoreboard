@@ -1,34 +1,12 @@
 import AVFoundation
 
-/// Short alert sounds, synthesized in code (no audio files). They play mixed with whatever
-/// you're watching, so the game's audio keeps going underneath.
+/// The lead-change fanfare, synthesized in code (no audio file). It plays mixed with whatever
+/// you're watching, so the game's audio keeps going underneath. Only lead changes make a sound.
 @MainActor
 final class SoundEffects {
     static let shared = SoundEffects()
 
-    enum Kind {
-        case gain        // points up
-        case bigGain     // touchdown or 6+ points
-        case loss        // points down
-        case leadChange  // the favorite flipped
-
-        init(for event: ScoreEvent) {
-            switch event.kind {
-            case .leadChange:
-                self = .leadChange
-            case .scoring(let changes):
-                let delta = event.totalDelta
-                let play = changes.first?.play ?? ""
-                if delta < 0 {
-                    self = .loss
-                } else if delta >= 6 || play.contains("TOUCHDOWN") || play.contains("TD") || play.contains("PICK SIX") {
-                    self = .bigGain
-                } else {
-                    self = .gain
-                }
-            }
-        }
-    }
+    enum Kind { case leadChange }
 
     private let engine = AVAudioEngine()
     private let node = AVAudioPlayerNode()
@@ -62,13 +40,6 @@ final class SoundEffects {
 
     private func notes(for kind: Kind) -> [Note] {
         switch kind {
-        case .gain:        // bright two-note "ding-ding" up
-            return [(659.3, 0, 0.22, 0.55), (880.0, 0.11, 0.35, 0.6)]
-        case .bigGain:     // rising arpeggio with a held top note
-            return [(523.3, 0, 0.18, 0.5), (659.3, 0.09, 0.18, 0.5), (784.0, 0.18, 0.2, 0.55),
-                    (1046.5, 0.27, 0.6, 0.65), (1318.5, 0.27, 0.6, 0.25)]
-        case .loss:        // soft two-note "dun-dun" down
-            return [(392.0, 0, 0.25, 0.55), (293.7, 0.17, 0.45, 0.6)]
         case .leadChange:  // short fanfare
             return [(392.0, 0, 0.14, 0.5), (523.3, 0.12, 0.14, 0.5), (659.3, 0.24, 0.14, 0.5),
                     (784.0, 0.36, 0.75, 0.6), (987.8, 0.36, 0.75, 0.3), (1174.7, 0.36, 0.75, 0.2)]
