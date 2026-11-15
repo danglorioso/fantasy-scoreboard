@@ -124,18 +124,19 @@ final class PiPController: NSObject, ObservableObject {
 
         // Idle tile: only redraw when it actually changes (saves CPU in the background,
         // where tvOS kills apps that work too hard).
-        let snapshotKey = tracker.snapshot.map { s in
+        let shown = tracker.displaySnapshot ?? tracker.snapshot
+        let snapshotKey = shown.map { s in
             s.matchups.map {
                 "\($0.home.label)\($0.home.points)-\($0.away?.points ?? 0)@\(Int((($0.homeWinProbability ?? -1) * 100).rounded()))"
             }.joined(separator: ",")
         } ?? "none"
         // Leagues with more than 4 matchups rotate through pages of columns.
-        let pages = tracker.snapshot.map { ScoreboardView.pageCount($0.matchups) } ?? 1
+        let pages = shown.map { ScoreboardView.pageCount($0.matchups) } ?? 1
         let idlePage = pages > 1 ? Int(Date().timeIntervalSince1970 / Config.idlePageSeconds) % pages : 0
         let key = [snapshotKey, tracker.recent.first ?? "", tracker.statusLine, "\(idlePage)"].joined(separator: "|")
         guard key != lastRenderKey else { return }
         lastRenderKey = key
-        if let image = render(ScoreboardView(snapshot: tracker.snapshot, event: nil,
+        if let image = render(ScoreboardView(snapshot: shown, event: nil,
                                              ticker: tracker.recent.first,
                                              status: tracker.statusLine,
                                              idlePage: idlePage)) {

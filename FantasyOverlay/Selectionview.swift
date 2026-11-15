@@ -6,6 +6,15 @@ struct SelectionView: View {
     @EnvironmentObject private var tracker: ScoreTracker
     @State private var exactText = ""
 
+    private var delayOptions: [Double] {
+        var options = Config.alertDelayOptions
+        if !options.contains(tracker.alertDelaySeconds) {
+            options.append(tracker.alertDelaySeconds)
+            options.sort()
+        }
+        return options
+    }
+
     /// The presets, plus a typed-in amount if it isn't one of them.
     private var pickerOptions: [Double] {
         var options = Config.pointChangeOptions
@@ -39,6 +48,16 @@ struct SelectionView: View {
                 Text("Alerts")
             } footer: {
                 Text("Players only alert once their points move by at least this much. Smaller gains, like each yard a QB throws for, add up until they reach it. Pick a preset or type any amount from 0.01 up.")
+            }
+
+            Section {
+                Picker("Alert delay", selection: $tracker.alertDelaySeconds) {
+                    ForEach(delayOptions, id: \.self) { value in
+                        Text(value == 0 ? "Off" : "\(Int(value)) seconds").tag(value)
+                    }
+                }
+            } footer: {
+                Text("Holds alerts and the between-alerts scores back so they don't spoil plays before your stream shows them. To set it: when a score happens on TV, note how many seconds earlier the alert appeared, and pick about that much.")
             }
 
             Section {

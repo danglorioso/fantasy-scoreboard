@@ -5,6 +5,9 @@ import SwiftUI
 @MainActor
 final class ScoreTracker: ObservableObject {
     @Published private(set) var snapshot: LeagueSnapshot?
+    /// What the floating window shows between alerts: the league as it was `alertDelaySeconds`
+    /// ago, so scores there don't get ahead of your stream either.
+    @Published private(set) var displaySnapshot: LeagueSnapshot?
     @Published private(set) var currentEvent: ScoreEvent?
     @Published private(set) var recent: [String] = []
     @Published private(set) var lastUpdated: Date?
@@ -23,6 +26,14 @@ final class ScoreTracker: ObservableObject {
     }() {
         didSet { UserDefaults.standard.set(minimumPointChange, forKey: "minimumPointChange") }
     }
+    /// Holds every alert (and the between-alerts scores) back this many seconds, so they match a
+    /// stream that runs behind live TV. Saved on this Apple TV.
+    @Published var alertDelaySeconds: Double = UserDefaults.standard.double(forKey: "alertDelaySeconds") {
+        didSet {
+            UserDefaults.standard.set(alertDelaySeconds, forKey: "alertDelaySeconds")
+            updateDisplaySnapshot()
+        }
+    }
     /// NFL games to alert on. Empty = all games.
     @Published var selectedGameIds: Set<String> = [] {
         didSet { saveSelections() }
@@ -31,6 +42,8 @@ final class ScoreTracker: ObservableObject {
     private var source: any ScoreSource
     private var queue: [ScoreEvent] = []
     private var consecutiveFailures = 0
+    /// Recent snapshots with when they arrived, for the delayed between-alerts view.
+    private var history: [(at: Date, snapshot: LeagueSnapshot)] = []
     /// Each player's points as of their last alert (key "teamId-playerId"). Changes are measured
     /// from here, so small gains below the threshold add up until together they reach it.
     private var alertedPoints: [String: AlertBaseline] = [:]
@@ -124,6 +137,8 @@ final class ScoreTracker: ObservableObject {
         source = Self.makeSource(demo: demoMode)
         snapshot = nil
         queue.removeAll()
+        history.removeAll()
+        displaySnapshot = nil
         recent.removeAll()
         alertedPoints.removeAll()
         currentEvent = nil
@@ -155,6 +170,8 @@ final class ScoreTracker: ObservableObject {
                                   threshold: minimumPointChange, baseline: &alertedPoints))
             }
             snapshot = new
+            history.append((Date(), new))
+            updateDisplaySnapshot()
             lastUpdated = Date()
             errorMessage = nil
             consecutiveFailures = 0
@@ -179,7 +196,18 @@ final class ScoreTracker: ObservableObject {
                                 winProbability: before.map { min(0.99, $0 + 0.06) },
                                 previousWinProbability: before,
                                 previousTeam: m.home,
-                                previousOpponent: m.away), at: 0)
+                                previousOpponent: m.away), at: 0)   // test alerts skip the delay
+    }
+
+    /// Picks the newest snapshot that is at least `alertDelaySeconds` old.
+    private func updateDisplaySnapshot() {
+        let cutoff = Date().addingTimeInterval(-alertDelaySeconds)
+        history.removeAll { $0.at < cutoff.addingTimeInterval(-120) }
+        let chosen = history.last(where: { $0.at <= cutoff })?.snapshot
+            ?? (displaySnapshot == nil ? history.first?.snapshot : nil)
+        if let chosen, chosen.matchups != displaySnapshot?.matchups || displaySnapshot == nil {
+            displaySnapshot = chosen
+        }
     }
 
     // MARK: Diffing
@@ -247,8 +275,10 @@ final class ScoreTracker: ObservableObject {
                 }
             }
 
+            // Lead change = the favorite flips: ESPN's win probability crosses 50%.
+            // (A team passing the other on live points alone doesn't count.)
             if Config.alertOnLeadChange,
-               let was = om.leaderId, let now = m.leaderId, was != now,
+               let was = Self.favorite(om), let now = Self.favorite(m), was != now,
                let leader = m.team(now),
                m.teams.contains(where: { filter.allowsTeam($0.id) }),
                filter.proTeamIds == nil || matchupHadAlert {
@@ -262,16 +292,27 @@ final class ScoreTracker: ObservableObject {
         return events
     }
 
+    /// The team ESPN gives better than 50% to win (nil if unknown or exactly even).
+    static func favorite(_ m: MatchupScore) -> Int? {
+        guard let p = m.homeWinProbability, let away = m.away else { return nil }
+        if p > 0.5 { return m.home.id }
+        if p < 0.5 { return away.id }
+        return nil
+    }
+
     /// Every player's point change gets its own card, shown in order, one after another.
     private func enqueue(_ events: [ScoreEvent]) {
-        queue.append(contentsOf: events)
+        let ready = Date().addingTimeInterval(alertDelaySeconds)
+        queue.append(contentsOf: events.map { var e = $0; e.readyAt = ready; return e })
     }
 
     /// How many alerts are waiting (shown in the app's status line).
     var queuedCount: Int { queue.count }
 
     private func showNextAlert() async {
-        guard !queue.isEmpty else {
+        updateDisplaySnapshot()
+        guard let next = queue.first, next.readyAt <= Date() else {
+            // Nothing ready yet (empty, or still being held back by the alert delay).
             try? await Task.sleep(for: .milliseconds(300))
             return
         }
@@ -284,7 +325,8 @@ final class ScoreTracker: ObservableObject {
         // go straight to it (no fade, no idle tile in between); otherwise fade out and rest.
         let full = Config.alertSeconds(isLeadChange: event.isLeadChange)
         try? await Task.sleep(for: .seconds(full - Config.fadeOutSeconds))
-        if !queue.isEmpty { return }
+        // Chain straight into the next alert if it's ready by the time this one would fade.
+        if let next = queue.first, next.readyAt <= Date().addingTimeInterval(Config.fadeOutSeconds) { return }
         try? await Task.sleep(for: .seconds(Config.fadeOutSeconds))
         currentEvent = nil
         try? await Task.sleep(for: .milliseconds(400))
