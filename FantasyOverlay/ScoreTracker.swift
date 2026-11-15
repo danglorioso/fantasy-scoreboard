@@ -26,6 +26,12 @@ final class ScoreTracker: ObservableObject {
     }() {
         didSet { UserDefaults.standard.set(minimumPointChange, forKey: "minimumPointChange") }
     }
+    /// Alert sound volume, 0 (off) to 1. Saved on this Apple TV.
+    @Published var soundVolume: Double = {
+        UserDefaults.standard.object(forKey: "soundVolume") as? Double ?? Config.defaultSoundVolume
+    }() {
+        didSet { UserDefaults.standard.set(soundVolume, forKey: "soundVolume") }
+    }
     /// Holds every alert (and the between-alerts scores) back this many seconds, so they match a
     /// stream that runs behind live TV. Saved on this Apple TV.
     @Published var alertDelaySeconds: Double = UserDefaults.standard.double(forKey: "alertDelaySeconds") {

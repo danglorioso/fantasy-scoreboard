@@ -13,6 +13,7 @@
 		373FBF1B30A7B260007B9DAC /* FantasyOverlayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF1A30A7B260007B9DAC /* FantasyOverlayApp.swift */; };
 		373FBF1D30A7B635007B9DAC /* Winprobability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF1C30A7B631007B9DAC /* Winprobability.swift */; };
 		373FBF1F30A7BBC1007B9DAC /* Selectionview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF1E30A7BBBE007B9DAC /* Selectionview.swift */; };
+		373FBF4130A90001007B9DAC /* SoundEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF4030A90001007B9DAC /* SoundEffects.swift */; };
 		373FBF2230A7E18C007B9DAC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 373FBF2030A7DD58007B9DAC /* Assets.xcassets */; };
 		373FBF2830A80F1D007B9DAC /* Secrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373FBF2730A80F1D007B9DAC /* Secrets.swift */; };
 		4E748CCD3FAF6CDC4C1E402A /* DemoSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14AF0F1AEBF03F88036EADFA /* DemoSource.swift */; };
@@ -29,6 +30,7 @@
 		373FBF1A30A7B260007B9DAC /* FantasyOverlayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FantasyOverlayApp.swift; sourceTree = "<group>"; };
 		373FBF1C30A7B631007B9DAC /* Winprobability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Winprobability.swift; sourceTree = "<group>"; };
 		373FBF1E30A7BBBE007B9DAC /* Selectionview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectionview.swift; sourceTree = "<group>"; };
+		373FBF4030A90001007B9DAC /* SoundEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEffects.swift; sourceTree = "<group>"; };
 		373FBF2030A7DD58007B9DAC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		373FBF2730A80F1D007B9DAC /* Secrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Secrets.swift; sourceTree = "<group>"; };
 		582371EF065C74D7859A66AC /* ScoreTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreTracker.swift; sourceTree = "<group>"; };
@@ -46,6 +48,7 @@
 				9E11FDFE2C449AC03D36346E /* Config.swift */,
 				14AF0F1AEBF03F88036EADFA /* DemoSource.swift */,
 				373FBF1E30A7BBBE007B9DAC /* Selectionview.swift */,
+				373FBF4030A90001007B9DAC /* SoundEffects.swift */,
 				137126B6EC196253B6CC7D03 /* ESPNSource.swift */,
 				373FBF1A30A7B260007B9DAC /* FantasyOverlayApp.swift */,
 				C9D99E72E936DF6752F04F00 /* Info.plist */,
@@ -149,6 +152,7 @@
 				373FBF1B30A7B260007B9DAC /* FantasyOverlayApp.swift in Sources */,
 				DF50DFA426D7D9CC6D097BD9 /* Config.swift in Sources */,
 				373FBF1F30A7BBC1007B9DAC /* Selectionview.swift in Sources */,
+				373FBF4130A90001007B9DAC /* SoundEffects.swift in Sources */,
 				4E748CCD3FAF6CDC4C1E402A /* DemoSource.swift in Sources */,
 				373FBF1D30A7B635007B9DAC /* Winprobability.swift in Sources */,
 				33259F830F5ACD3CAB42A76C /* ESPNSource.swift in Sources */,

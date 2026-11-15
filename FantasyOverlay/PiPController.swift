@@ -119,6 +119,14 @@ final class PiPController: NSObject, ObservableObject {
                 let start = max(earliest, FrameStore.shared.lastFadeStart ?? earliest)
                 FrameStore.shared.addTimeline(start: start, frames: frames,
                                               fadeSeconds: Config.fadeOutSeconds)
+
+                // Play the sound when the burst actually appears in the window.
+                let wait = max(0, start - player.currentTime().seconds)
+                let kind = SoundEffects.Kind(for: event)
+                let volume = tracker.soundVolume
+                DispatchQueue.main.asyncAfter(deadline: .now() + wait) {
+                    SoundEffects.shared.play(kind, volume: volume)
+                }
             }
         }
 

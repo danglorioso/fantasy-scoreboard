@@ -41,6 +41,8 @@ enum Config {
     /// "Lead change" alerts fire when the favorite flips (ESPN's win probability crosses 50%),
     /// not when the live score leader changes.
     static let alertOnLeadChange = true
+    /// Sound effect volume when nothing has been chosen on the Apple TV yet (0 = off, 1 = full).
+    static let defaultSoundVolume: Double = 0.6
     /// Choices for the app's "Alert delay" setting (seconds), to line alerts up with your stream.
     static let alertDelayOptions: [Double] = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 75, 90, 105, 120]
     /// false = PiP sits as a nearly blank dark tile between alerts (popup feel).
