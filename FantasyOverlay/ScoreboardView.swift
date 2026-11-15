@@ -316,7 +316,7 @@ struct AlertCard: View {
 
     /// Name under the photo: sized to span the photo's width (shorter names get bigger).
     private static func nameSize(_ name: String) -> CGFloat {
-        min(38, 160 / max(1, CGFloat(name.count) * 0.58))
+        min(42, 180 / max(1, CGFloat(name.count) * 0.58))
     }
 
     /// The player's ESPN photo in a white ring, or a silhouette until it has loaded.
