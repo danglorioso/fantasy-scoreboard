@@ -250,7 +250,7 @@ struct AlertCard: View {
             if let c = change {
                 HStack(spacing: 0) {
                     // The point change, with what happened ("TOUCHDOWN · 18 YDS") under it.
-                    VStack(spacing: -4 * k) {
+                    VStack(spacing: c.play == nil ? 0 : -8 * k) {
                         Text(c.delta.displaySigned)
                             .font(.system(size: (c.play == nil ? 170 : 146) * k, weight: .black, design: .rounded).monospacedDigit())
                             .lineLimit(1)
@@ -267,9 +267,11 @@ struct AlertCard: View {
                                 .background(Capsule().fill(Color.black.opacity(0.36)))
                         }
                     }
-                    // Lift the pair a little so the label sits midway between the number and the
-                    // bottom edge instead of hugging it.
-                    .offset(y: c.play == nil ? 0 : -8 * k)
+                    // Place the label midway between the bottom of the digits and the bottom edge.
+                    // (SF Rounded at 146 pt: the text box is ~174 tall with the digits' baseline
+                    // ~139 down; the pill is ~47 tall. These put the number's top ~37 from the
+                    // top edge and leave ~27 under the label.)
+                    .offset(y: c.play == nil ? 0 : -13.5 * k)
                     Spacer(minLength: 16 * k)
                     VStack(spacing: 6 * k) {
                         headshot(for: c.player, size: 160 * k)
