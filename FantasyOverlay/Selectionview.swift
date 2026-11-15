@@ -70,7 +70,7 @@ struct SelectionView: View {
             } header: {
                 Text("Sound")
             } footer: {
-                Text("A short fanfare when the favorite in a matchup flips. Other alerts are silent. It plays over your stream's audio.")
+                Text("An air horn when the favorite in a matchup flips. Other alerts are silent. It plays over your stream's audio.")
             }
 
             // MARK: Teams & games

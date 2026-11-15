@@ -120,7 +120,7 @@ final class PiPController: NSObject, ObservableObject {
                 FrameStore.shared.addTimeline(start: start, frames: frames,
                                               fadeSeconds: Config.fadeOutSeconds)
 
-                // Lead changes get a fanfare, timed to when the burst appears in the window.
+                // Lead changes get an air horn, timed to when the burst appears in the window.
                 if event.isLeadChange {
                     let wait = max(0, start - player.currentTime().seconds)
                     let volume = tracker.soundVolume
