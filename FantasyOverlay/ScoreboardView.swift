@@ -165,9 +165,27 @@ struct MatchupColumns: View {
     private func column(_ m: MatchupScore) -> some View {
         let a = m.home
         let pa = m.homeWinProbability
+        // ESPN at 100% (rounded) for one side means the matchup is decided.
+        let winner: TeamScore? = {
+            guard let b = m.away, let pa else { return nil }
+            switch Self.percent(pa) {
+            case 100: return a
+            case 0: return b
+            default: return nil
+            }
+        }()
+        func isLeading(_ t: TeamScore, over o: TeamScore?) -> Bool {
+            if let winner { return winner.id == t.id }
+            guard let o else { return true }
+            return t.id == a.id ? t.points >= o.points : t.points > o.points
+        }
         return VStack(spacing: 0) {
-            row(a, leading: m.away.map { a.points >= $0.points } ?? true)
-            if let b = m.away {
+            row(a, leading: isLeading(a, over: m.away), decided: winner != nil)
+            if let b = m.away, let winner {
+                winBadge(winner)
+                    .frame(height: 34 * k)
+                row(b, leading: isLeading(b, over: a), decided: true)
+            } else if let b = m.away {
                 HStack(spacing: 6 * k) {
                     pct(pa.map { Double(Self.percent($0)) / 100 })
                     GeometryReader { geo in
@@ -187,7 +205,7 @@ struct MatchupColumns: View {
                     pct(pa.map { Double(100 - Self.percent($0)) / 100 })   // the two sides always add to 100
                 }
                 .frame(height: 34 * k)
-                row(b, leading: b.points > a.points)
+                row(b, leading: isLeading(b, over: a), decided: false)
             } else {
                 Text("BYE")
                     .font(.system(size: 22 * k, weight: .bold))
@@ -199,7 +217,24 @@ struct MatchupColumns: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func row(_ t: TeamScore, leading: Bool) -> some View {
+    private func winBadge(_ t: TeamScore) -> some View {
+        HStack(spacing: 6 * k) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 15 * k, weight: .black))
+            Text("\(t.label) WINS")
+                .font(.system(size: 17 * k, weight: .black, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 14 * k)
+        .frame(height: 26 * k)
+        .background(Capsule().fill(TeamColors.color(for: t.id)))
+        .overlay(Capsule().strokeBorder(Color.white.opacity(0.35), lineWidth: 1.5 * k))
+        .frame(maxWidth: .infinity)
+    }
+
+    private func row(_ t: TeamScore, leading: Bool, decided: Bool = false) -> some View {
         HStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 4 * k)
                 .fill(TeamColors.color(for: t.id))
@@ -216,7 +251,7 @@ struct MatchupColumns: View {
                 .layoutPriority(1)
         }
         .frame(height: 62 * k)
-        .opacity(leading ? 1 : 0.72)
+        .opacity(leading ? 1 : (decided ? 0.45 : 0.72))
     }
 
     private static func percent(_ p: Double) -> Int { Int((min(1, max(0, p)) * 100).rounded()) }
