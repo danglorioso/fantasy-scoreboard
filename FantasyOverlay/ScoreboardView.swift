@@ -248,6 +248,7 @@ struct MatchupColumns: View {
             Text(t.points.formatted1)
                 .font(.system(size: 36 * k, weight: .black, design: .rounded).monospacedDigit())
                 .lineLimit(1)
+                .fixedSize()        // never truncate the score; the nickname shrinks instead
                 .layoutPriority(1)
         }
         .frame(height: 62 * k)
@@ -562,6 +563,7 @@ struct AlertCard: View {
             Text(t.points.formatted1)
                 .font(.system(size: 68 * k, weight: .black, design: .rounded).monospacedDigit())
                 .lineLimit(1)
+                .fixedSize()        // never truncate the score; the nickname shrinks instead
                 .layoutPriority(1)
                 .padding(.trailing, 20 * k)
         }
