@@ -144,7 +144,7 @@ enum TeamColors {
 }
 
 /// Between alerts: one column per matchup. Each column has both teams (color bar, nickname,
-/// score; the trailing team dimmed) with a two-color win-chance bar between them.
+/// score; the team ESPN doesn't favor dimmed) with a two-color win-chance bar between them.
 struct MatchupColumns: View {
     let matchups: [MatchupScore]
     private var k: CGFloat { ScoreboardView.k }
@@ -174,10 +174,13 @@ struct MatchupColumns: View {
             default: return nil
             }
         }()
+        // Bright = the team ESPN favors (same rule as the lead-change alert). Before ESPN has
+        // a probability, or at exactly 50%, fall back to points; a tie leaves both bright.
+        let favorite = ScoreTracker.favorite(m) ?? m.leaderId
         func isLeading(_ t: TeamScore, over o: TeamScore?) -> Bool {
             if let winner { return winner.id == t.id }
-            guard let o else { return true }
-            return t.id == a.id ? t.points >= o.points : t.points > o.points
+            guard o != nil, let favorite else { return true }
+            return favorite == t.id
         }
         return VStack(spacing: 0) {
             row(a, leading: isLeading(a, over: m.away), decided: winner != nil)
