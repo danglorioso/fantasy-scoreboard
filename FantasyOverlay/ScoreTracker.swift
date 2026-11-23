@@ -299,7 +299,7 @@ final class ScoreTracker: ObservableObject {
     }
 
     /// The team ESPN gives better than 50% to win (nil if unknown or exactly even).
-    static func favorite(_ m: MatchupScore) -> Int? {
+    nonisolated static func favorite(_ m: MatchupScore) -> Int? {
         guard let p = m.homeWinProbability, let away = m.away else { return nil }
         if p > 0.5 { return m.home.id }
         if p < 0.5 { return away.id }
