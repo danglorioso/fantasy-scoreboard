@@ -225,7 +225,73 @@ def icon_back():
     return svg(1280, 768, field(1280, 768, 128, "b", perspective=False))
 
 
-def top_shelf(w, h, ball_c, scale, title_x, title_size, sub_size):
+
+# --------------------------------------------------------- PiP demo card ---
+# A static mock of the app's between-alerts screen (MatchupColumns in
+# ScoreboardView.swift): a 960x240 banner with one column per matchup.
+TEAM_RGB = {1: (0.82, 0.24, 0.24), 2: (0.56, 0.30, 0.82), 3: (0.93, 0.52, 0.10), 4: (0.08, 0.60, 0.56),
+            5: (0.86, 0.30, 0.62), 6: (0.32, 0.58, 0.20), 7: (0.74, 0.58, 0.08), 8: (0.36, 0.42, 0.54)}
+DEMO_MATCHUPS = [  # (home id, label, pts), (away id, label, pts), home win probability
+    ((1, "GURU", 112.4), (2, "BLTZ", 98.7), 0.71),
+    ((3, "EZE", 87.2), (4, "PIRT", 91.5), 0.42),
+    ((5, "HAIL", 104.9), (6, "4TH", 76.3), 0.88),
+    ((7, "RZR", 95.1), (8, "SACK", 95.8), 0.49),
+]
+
+
+def _rgb(tid):
+    r, g, b = TEAM_RGB[tid]
+    return f"rgb({r * 255:.0f},{g * 255:.0f},{b * 255:.0f})"
+
+
+def pip_card(x, y, scale, uid):
+    W, H = 960, 240
+    col_w = W / len(DEMO_MATCHUPS)
+    font = 'font-family="Inter Display"'
+    parts = []
+    top = (H - (62 + 34 + 62)) / 2
+    for i, (a, b, pa) in enumerate(DEMO_MATCHUPS):
+        x0, x1 = i * col_w + 16, (i + 1) * col_w - 16
+        fav = a[0] if pa > 0.5 else b[0]
+
+        def row(t, ry):
+            op = 1 if t[0] == fav else 0.72
+            return (f'<g opacity="{op}"><rect x="{x0}" y="{ry}" width="8" height="62" rx="4" fill="{_rgb(t[0])}"/>'
+                    f'<text x="{x0 + 18}" y="{ry + 31 + 10}" {font} font-weight="900" font-size="28" fill="#fff">{t[1]}</text>'
+                    f'<text x="{x1}" y="{ry + 31 + 13}" text-anchor="end" {font} font-weight="900" font-size="36" '
+                    f'fill="#fff">{t[2]:.1f}</text></g>')
+
+        parts.append(row(a, top))
+        my = top + 62 + 17
+        pct_a = round(pa * 100)
+        bx0, bx1 = x0 + 40 + 6, x1 - 40 - 6
+        split = bx0 + (bx1 - bx0) * pa
+        parts.append(
+            f'<clipPath id="bar{uid}{i}"><rect x="{bx0}" y="{my - 5}" width="{bx1 - bx0}" height="10" rx="5"/></clipPath>'
+            f'<g clip-path="url(#bar{uid}{i})"><rect x="{bx0}" y="{my - 5}" width="{split - bx0:.1f}" height="10" fill="{_rgb(a[0])}"/>'
+            f'<rect x="{split:.1f}" y="{my - 5}" width="{bx1 - split:.1f}" height="10" fill="{_rgb(b[0])}"/></g>'
+            f'<g {font} font-weight="700" font-size="16" fill="#fff" fill-opacity="0.85" text-anchor="middle">'
+            f'<text x="{x0 + 20}" y="{my + 6}">{pct_a}%</text><text x="{x1 - 20}" y="{my + 6}">{100 - pct_a}%</text></g>')
+        parts.append(row(b, top + 62 + 34))
+        if i < len(DEMO_MATCHUPS) - 1:
+            parts.append(f'<rect x="{(i + 1) * col_w - 0.5}" y="0" width="1" height="{H}" fill="#fff" fill-opacity="0.08"/>')
+
+    return f"""
+  <defs>
+    <clipPath id="pipClip{uid}"><rect width="{W}" height="{H}" rx="22"/></clipPath>
+    <filter id="pipShadow{uid}" x="-20%" y="-40%" width="140%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="20" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <g transform="translate({x:.1f},{y:.1f}) scale({scale})">
+    <rect width="{W}" height="{H}" rx="22" fill="#0b0d12" filter="url(#pipShadow{uid})"/>
+    <g clip-path="url(#pipClip{uid})">{''.join(parts)}</g>
+    <rect x="0.75" y="0.75" width="{W - 1.5}" height="{H - 1.5}" rx="21.5" fill="none" stroke="#fff" stroke-opacity="0.14" stroke-width="1.5"/>
+  </g>
+"""
+
+
+def top_shelf(w, h, ball_c, scale, title_x, title_size, sub_size, pip_scale=0.58):
     # Place the 1280x768 front artwork, scaled, so the ball lands at ball_c.
     gx, gy = ball_c[0] - 550 * scale, ball_c[1] - 388 * scale
     art = f'<g transform="translate({gx:.1f},{gy:.1f}) scale({scale})">' \
@@ -251,7 +317,10 @@ def top_shelf(w, h, ball_c, scale, title_x, title_size, sub_size):
   <text x="{title_x + title_size * 0.04:.0f}" y="{ty + sub_gap:.0f}" font-family="Inter Display" font-weight="600"
         font-size="{sub_size}" fill="#a9bdd6" filter="url(#titleShadow)">Live fantasy alerts over the game</text>
 """
-    return svg(w, h, field(w, h, h * 0.278, "t") + art + text)
+    # Between-alerts demo, floating in the bottom-right corner like the PiP window does on TV.
+    margin = h * 0.06
+    demo = pip_card(w - margin - 960 * pip_scale, h - margin - 240 * pip_scale, pip_scale, "t")
+    return svg(w, h, field(w, h, h * 0.278, "t") + art + text + demo)
 
 
 def render(svg_text, out_path, width, height, opaque):
