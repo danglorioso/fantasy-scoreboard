@@ -230,7 +230,11 @@ def top_shelf(w, h, ball_c, scale, title_x, title_size, sub_size):
     gx, gy = ball_c[0] - 550 * scale, ball_c[1] - 388 * scale
     art = f'<g transform="translate({gx:.1f},{gy:.1f}) scale({scale})">' \
           f'{football(550, 388, "t")}{badge(948, 230, 170, "t")}</g>'
-    ty = h * 0.455
+    # Center the title + subtitle block vertically: from the title's cap height
+    # (~0.73 em in Inter Display) down to the subtitle's x-height midline.
+    sub_gap = title_size * 0.78           # title baseline -> subtitle baseline
+    cap = title_size * 0.73
+    ty = h / 2 + (cap - sub_gap + sub_size * 0.27) / 2
     text = f"""
   <defs>
     <linearGradient id="titleFill" x1="0" y1="0" x2="0" y2="1">
@@ -244,7 +248,7 @@ def top_shelf(w, h, ball_c, scale, title_x, title_size, sub_size):
   </defs>
   <text x="{title_x}" y="{ty:.0f}" font-family="Inter Display" font-weight="800" font-size="{title_size}"
         letter-spacing="{-title_size * 0.01:.1f}" fill="url(#titleFill)" filter="url(#titleShadow)">Fantasy Overlay</text>
-  <text x="{title_x + title_size * 0.04:.0f}" y="{ty + title_size * 1.05:.0f}" font-family="Inter Display" font-weight="600"
+  <text x="{title_x + title_size * 0.04:.0f}" y="{ty + sub_gap:.0f}" font-family="Inter Display" font-weight="600"
         font-size="{sub_size}" fill="#a9bdd6" filter="url(#titleShadow)">Live fantasy alerts over the game</text>
 """
     return svg(w, h, field(w, h, h * 0.278, "t") + art + text)
